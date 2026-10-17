@@ -1,0 +1,98 @@
+The crowd and the chain, in gates (Quest for Entropy #19, Evidence Adds Up to a Fact)
+# env: qiskit 2.5.2, python 3.12.11, numpy 2.4.0
+look gate: CRY(2*phi), control X, target W (overlap cos phi); particle P: amplitudes sqrt(3/4), sqrt(1/4) e^(i pi/3); V0 = 0.866025403784
+CALIBRATION  one look at P, phi = 60, witness traced out: V = 0.433012701892   V0 cos 60 = 0.433012701892   |dev| 0.0e+00
+
+STAGE A - the article rows (phi = 60 degrees, V0 = sqrt(3)/2 = 0.866025403784)
+A1  star, d witnesses each looking at P:  V(d) = V0 (1/2)^d
+      d  V (gates)       V0 (1/2)^d      |dev|
+      0  0.866025403784  0.866025403784  0.0e+00
+      1  0.433012701892  0.433012701892  1.1e-16
+      2  0.216506350946  0.216506350946  1.1e-16
+      3  0.108253175473  0.108253175473  6.9e-17
+      4  0.054126587737  0.054126587737  4.9e-17
+      5  0.027063293868  0.027063293868  3.5e-17
+      6  0.013531646934  0.013531646934  2.1e-17
+      7  0.006765823467  0.006765823467  1.1e-17
+      8  0.003382911734  0.003382911734  6.5e-18
+A2  chain, copies of copies:  V(d) = V0 / 2 for every d >= 1
+      d  V (gates)       law             |dev|
+      0  0.866025403784  0.866025403784  0.0e+00
+      1  0.433012701892  0.433012701892  1.1e-16
+      2  0.433012701892  0.433012701892  1.1e-16
+      3  0.433012701892  0.433012701892  1.1e-16
+      4  0.433012701892  0.433012701892  1.1e-16
+      5  0.433012701892  0.433012701892  1.1e-16
+      6  0.433012701892  0.433012701892  1.1e-16
+      7  0.433012701892  0.433012701892  1.1e-16
+      8  0.433012701892  0.433012701892  1.1e-16
+A3  star, d = 4, the eraser reaches k of the 4 (every choice of which k):  V = V0 (1/2)^(d-k)
+      k  V (gates, k first)  V law           spread over the choices  |dev|
+      0  0.054126587737  0.054126587737  0.0e+00                  4.9e-17
+      1  0.108253175473  0.108253175473  1.4e-17                  8.3e-17
+      2  0.216506350946  0.216506350946  2.8e-17                  1.4e-16
+      3  0.433012701892  0.433012701892  0.0e+00                  1.7e-16
+      4  0.866025403784  0.866025403784  0.0e+00                  1.1e-16
+A4  chain of 4, the eraser misses witness j:  F = 1 - (1 - cos phi) sin^(2(j-1)) phi  (the chain's root law)
+      missed set   F (gates)       F law           |dev|
+      {1}          0.500000000000  0.500000000000  0.0e+00
+      {2}          0.625000000000  0.625000000000  0.0e+00
+      {3}          0.718750000000  0.718750000000  1.1e-16
+      {4}          0.789062500000  0.789062500000  0.0e+00
+      {2,3}        0.625000000000  0.625000000000  0.0e+00   (= F({2}))
+      {1,4}        0.500000000000  0.500000000000  0.0e+00   (= F({1}))
+A5  bits of finality per unreached direct witness, -log2 cos phi (star, one witness missed, F from gates)
+      phi (deg)  cos phi         F (gates)       bits
+       30        0.866025403784  0.866025403784  0.207518749639
+       45        0.707106781187  0.707106781187  0.500000000000
+       60        0.500000000000  0.500000000000  1.000000000000
+       75        0.258819045103  0.258819045103  1.949984313476
+       90        0.000000000000  0.000000000000  inf
+    Stage A rows against their closed forms: max|dev| 1.7e-16   PASS
+
+STAGE T - six wirings at phi = 60 degrees, nothing undone, d = 0..6 witnesses: V = V0 cos^(direct looks at P)
+    star    V(d=0..6): 0.866025403784 0.433012701892 0.216506350946 0.108253175473 0.054126587737 0.027063293868 0.013531646934
+            direct looks at P: [0, 1, 2, 3, 4, 5, 6]   V0 cos^d law dev 2.8e-17
+    chain   V(d=0..6): 0.866025403784 0.433012701892 0.433012701892 0.433012701892 0.433012701892 0.433012701892 0.433012701892
+            direct looks at P: [0, 1, 1, 1, 1, 1, 1]   V0 cos^d law dev 0.0e+00
+    ladder  V(d=0..6): 0.866025403784 0.433012701892 0.216506350946 0.108253175473 0.054126587737 0.027063293868 0.013531646934
+            direct looks at P: [0, 1, 2, 3, 4, 5, 6]   V0 cos^d law dev 5.6e-17
+    braid   V(d=0..6): 0.866025403784 0.433012701892 0.216506350946 0.216506350946 0.216506350946 0.216506350946 0.216506350946
+            direct looks at P: [0, 1, 2, 2, 2, 2, 2]   V0 cos^d law dev 1.1e-16
+    random  V(d=0..6): 0.866025403784 0.433012701892 0.216506350946 0.216506350946 0.054126587737 0.216506350946 0.108253175473
+            direct looks at P: [0, 1, 2, 2, 4, 2, 3]   V0 cos^d law dev 1.1e-16
+    bitcoin V(d=0..6): 0.866025403784 0.433012701892 0.216506350946 0.108253175473 0.054126587737 0.027063293868 0.013531646934
+            direct looks at P: [0, 1, 2, 3, 4, 5, 6]   V0 cos^d law dev 2.5e-16
+    a witness of a witness adds a listener, not a look: max|dev| 2.5e-16   PASS
+
+STAGE N - known negatives
+    phi = 0, star and chain, d = 0..8: max|V - V0| 0.0e+00 (nothing recorded, nothing lost)
+    phi = 90 (full copy), witnesses missed, d = 1..8: max V 5.3e-17 (< 1e-12)   PASS
+
+STAGE B - the reach averages: E_N = sum over masks of rho^(reached) (1-rho)^(missed) F, phi = pi/4, rho = 0.8
+      N  E_star gates    closed form     |dev|    E_chain gates   closed form     |dev|
+      1  0.941421356237  0.941421356237  2.2e-16  0.941421356237  0.941421356237  2.2e-16
+      2  0.886274169980  0.886274169980  5.6e-16  0.917989898732  0.917989898732  1.1e-16
+      3  0.834357431100  0.834357431100  4.4e-16  0.908617315730  0.908617315730  2.2e-16
+      4  0.785481904373  0.785481904373  4.4e-16  0.904868282529  0.904868282529  4.4e-16
+      5  0.739469439715  0.739469439715  8.9e-16  0.903368669249  0.903368669249  4.4e-16
+      6  0.696152322832  0.696152322832  1.4e-15  0.902768823937  0.902768823937  4.4e-16
+      7  0.655372663909  0.655372663909  5.6e-16  0.902528885812  0.902528885812  1.6e-15
+      8  0.616981822098  0.616981822098  3.2e-15  0.902432910562  0.902432910562  2.2e-15
+    closed forms: star (rho + (1-rho)c)^N, chain 1 - (1-c)(1-rho)(1 - (rho s^2)^N)/(1 - rho s^2); max|dev| 3.2e-15
+    chain limit 1 - (1-c)(1-rho)/(1-rho s^2) = 0.902368927062; E_chain(N=8) - limit = 6.4e-05 (the gap shrinks as (rho s^2)^N = 0.4^N)
+    B: gates against the closed forms   PASS
+
+STAGE C - the cat is a fork: the box {P, D, W1, W2}, the observer O outside (full looks, CRY(pi))
+    before O's first link: second singular value s2/s1 = 0.000000000000 (raw s2 = 0.000000000000); O's odds of 0: 1.000000000000
+    after  O copies D    : second singular value s2/s1 = 0.577350269190 (raw s2 = 0.500000000000); O's odds of 0: 0.750000000000
+    line odds (squared Schmidt weights) after: 0.750000000000 0.250000000000
+    the cut across the box wall carries nothing before the first link and lights up after it:
+    decided inside, unreceived until the observer's first link
+
+STAGE D - the re-signing control (declared, not computed)
+    The folklore branch (every witness re-draws from the whole table) has no gate form: N independent draws
+    from one table need N fresh preparations, and a measurement by one witness leaves the next witness a
+    copy, never a re-draw. Room 3 of the bench plays that branch by counting instead.
+
+EVERY ROW AGAINST ITS CLOSED FORM: max|dev| 3.2e-15   PASS

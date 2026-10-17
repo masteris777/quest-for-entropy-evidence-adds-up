@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidence Adds Up</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<!-- Test bench (skill: test-bench). Kitchen source for numbers and lab keys: ../mechanism.md -->
+<style>
+  :root{
+    --ground:#f6f5f1; --surface:#ffffff; --sunk:#efece5;
+    --ink:#23201c; --muted:#77736c; --rule:#e0dbd2;
+    --p:#c07016; --p-soft:#f6e6d1; --m:#6b4fbb; --m-soft:#e6e0f5;
+    --l0:#12806f; --l0-soft:#d9ece7; --l1:#2d64a8; --l1-soft:#dde7f4;
+    --flag:#b83a2b; --ok:#2f7d32;
+    --shadow:0 1px 2px rgba(35,32,28,.06), 0 8px 24px rgba(35,32,28,.05);
+    --serif:"IBM Plex Serif",Georgia,serif;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#181715; --surface:#221f1c; --sunk:#1e1c1a;
+      --ink:#ece6dc; --muted:#98918a; --rule:#35322d;
+      --p:#e09a45; --p-soft:#3a2c19; --m:#a48ce8; --m-soft:#2b2440;
+      --l0:#46bda9; --l0-soft:#153029; --l1:#72a3e3; --l1-soft:#18263a;
+      --flag:#e0715f; --ok:#6cc070;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#181715; --surface:#221f1c; --sunk:#1e1c1a;
+    --ink:#ece6dc; --muted:#98918a; --rule:#35322d;
+    --p:#e09a45; --p-soft:#3a2c19; --m:#a48ce8; --m-soft:#2b2440;
+    --l0:#46bda9; --l0-soft:#153029; --l1:#72a3e3; --l1-soft:#18263a;
+    --flag:#e0715f; --ok:#6cc070;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;margin:0}
+  .wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:32px 56px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:.2em 0 .15em;letter-spacing:-.01em}
+  h2{font-family:var(--serif);font-weight:600;font-size:21px;margin:0;line-height:1.2}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+  .lede{color:var(--muted);max-width:76ch;margin:0 0 18px}
+  .lede b{color:var(--ink);font-weight:500}
+  button{font:500 14px/1 var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--rule);
+         border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .12s}
+  button:hover:not(:disabled){background:var(--sunk)}
+  button:disabled{opacity:.38;cursor:not-allowed}
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  button.on{border-color:var(--ink);font-weight:600}
+  select{font:500 14px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:7px 8px}
+  .bar{position:sticky;top:0;z-index:5;background:var(--ground);border-bottom:1px solid var(--rule);
+       display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 0;margin-bottom:8px}
+  .bar .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .bar .where{font-family:var(--mono);font-size:12.5px}
+
+  .score{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:14px 0 6px}
+  .score div{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:13.5px}
+  .score b{display:block;font-size:14.5px;margin-bottom:2px}
+  .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+        border:1.5px solid currentColor;border-radius:12px;padding:1px 8px;margin:2px 0 4px;white-space:nowrap}
+  .chip.der{color:var(--ok)} .chip.mea{color:var(--l1)} .chip.opn{color:var(--p)} .chip.no{color:var(--flag)}
+
+  .panel{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:20px;margin-top:26px}
+  .phead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:12px}
+  .phead .n{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px}
+  @media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+  .say{font-size:14.5px;max-width:60ch}
+  .say p{margin:0 0 .7em}
+  .say .rule{border-left:3px solid var(--ink);padding-left:10px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .msg{font-size:14px;background:var(--sunk);border-radius:8px;padding:10px 12px;min-height:3em}
+  .msg:empty{display:none}
+  .msg .good{color:var(--ok);font-weight:600} .msg .bad{color:var(--flag);font-weight:600}
+  .viz{display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:0}
+  .tcap{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .tbl{display:grid;gap:4px;align-items:center;justify-items:center}
+  .axl{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;text-align:center}
+  .axl.p{color:var(--p)} .axl.m{color:var(--m)}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .cell svg{display:block}
+  .cell .num{font-family:var(--mono);font-size:10px;white-space:nowrap;color:var(--muted)}
+  .cell.hi svg{outline:2px solid var(--flag);outline-offset:-1px;border-radius:50%}
+  .cellrow{display:flex;flex-wrap:wrap;gap:10px}
+  .grp{display:flex;flex-direction:column;gap:3px;border:1px dashed var(--rule);border-radius:8px;padding:5px 7px}
+  .grp .in{display:flex;gap:3px}
+  .ctl{display:grid;grid-template-columns:auto minmax(120px,1fr) auto;gap:6px 10px;align-items:center;margin:4px 0;max-width:460px}
+  .ctl label{min-width:9em;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .ctl input[type=range]{width:100%;accent-color:var(--ink);margin:0}
+  .ctl .out{font-family:var(--mono);font-size:12.5px;min-width:3.5em;text-align:right}
+  .seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+  .seg button{border:0;border-radius:0;padding:7px 11px;font-size:13px}
+  .seg button.on{background:var(--ink);color:var(--surface)}
+  .tally:empty{display:none}
+  .tally{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunk);border-radius:8px;padding:10px 12px;white-space:pre-wrap;width:100%}
+  .big{font-family:var(--mono);font-size:22px;font-weight:600}
+  svg text{font-family:var(--mono)}
+  .bars{width:100%;max-width:520px}
+  .notclaimed{font-size:13px;color:var(--muted);max-width:84ch;margin-top:26px;padding-top:12px;border-top:1px solid var(--rule)}
+  .open{border:1.5px dashed var(--p);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px;background:var(--p-soft)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  .toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:8px;margin:14px 0 6px}
+  .toc a{display:block;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 12px;
+         color:var(--ink);text-decoration:none;font-size:13.5px}
+  .toc a:hover{border-color:var(--ink)}
+  .toc a b{font-size:14px} .toc a .n{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:6px}
+  .presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 6px}
+  .presets .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+  .presets button{font-size:12.5px;padding:6px 10px;border-radius:14px}
+  .static{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;margin-top:26px;font-size:14.5px}
+  .static h2{margin-bottom:8px}
+  .static ul{margin:.3em 0 0;padding-left:1.2em} .static li{margin:.35em 0}
+  .steps{margin:.4em 0 0;padding-left:1.4em} .steps li{margin:.45em 0}
+  .steps a{font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;margin-left:4px;white-space:nowrap}
+  .steps a:hover{color:var(--ink)}
+  .terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:6px 22px;margin-top:10px}
+  .terms div{font-size:14px;line-height:1.45}
+  .terms b{font-family:var(--mono);font-size:12.5px;font-weight:600}
+  .terms .sf{color:var(--muted);font-size:12.5px}
+  .static h3{font-size:15px;margin:16px 0 4px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-family:var(--mono);font-size:12.5px}
+  .kv .k{color:var(--muted)}
+  details.fold{align-self:stretch;min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 16px}
+  details.fold > summary{cursor:pointer;font-family:var(--serif);font-weight:600;font-size:15.5px;line-height:1.35}
+  details.fold > summary:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:4px}
+  details.fold[open] > summary{margin-bottom:10px}
+  @media (max-width:520px){details.fold{padding:10px}details.fold .ctl{grid-template-columns:auto minmax(70px,1fr) auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Quest for Entropy · bench for #19 · kitchen draft</p>
+  <h1>Evidence Adds Up to a Fact</h1>
+  <p class="lede">#18 ended on a question: <b>a marker meets, a detector settles; how are they really different?</b> The rules
+  are the ones of the Meeting Game: everything is a particle, every particle is a table, the only move is a meeting. This
+  bench walks the answer claim by claim. Eight rooms; each has presets for the cases worth seeing, and free dials for the rest.
+  The square itself (why the odds are length squared) is the Meeting Game's rooms 1 and 2: <a href="meeting_game.html">open it</a>.
+  To build your own meetings, at any strength, and see how much interference a joint undo restores: <a href="meeting_sandbox.html">the Meeting Sandbox</a>.</p>
+
+  <section class="static" id="nutshell">
+    <h2>In a nutshell</h2>
+    <p>The rules: everything is a particle, every particle is a table, and the only move is a meeting. A settlement is
+    what those meetings add up to. Seven steps:</p>
+    <ol class="steps">
+      <li><b>A meeting makes a promise.</b> Two tables join into one. Both lines are still there; nothing is written. A
+      marker's meeting and a detector's first touch are the same move.<a href="#room1">room 1</a></li>
+      <li><b>A line is written where two holders match.</b> A meeting with a newcomer copies the promise. A meeting of two
+      holders is a chance: each makes one light touch, which lands on a line with a chance set by its length. If both land on
+      the same line, it is written for every holder. Length times length is the square. Nothing is proposed or refused, and a
+      lone thread that never meets a holder again never writes.<a href="#room2">room 2</a></li>
+      <li><b>Every later meeting copies.</b> A witness that meets a settled particle finds one line left, so it can only copy.
+      Re-signing would contradict the books; voting would lose the square.<a href="#room3">room 3</a></li>
+      <li><b>A fact is a line nobody can undo any more.</b> An undo must reach every book that holds the line and reverse the
+      meetings, last first. Its chance falls geometrically with the books.<a href="#room4">room 4</a></li>
+      <li><b>Only direct looks count.</b> Each direct witness out of reach costs the undo a factor. A chain of retellings
+      costs it only the first link. Evidence adds up; hearsay doesn't.<a href="#room5">room 5</a></li>
+      <li><b>Where the write sits is invisible.</b> Anyone who misses one book predicts exactly the same readings whether
+      or not a line was written. The table never narrows; narrowing is what you get by conditioning on the books beyond reach.<a href="#room6">room 6</a></li>
+      <li><b>A fact is a fact for someone.</b> A copy counts only for a reading that could contradict it. A fact inside a
+      closed box is decided but not yet received outside; opening the box delivers it.<a href="#room7">room 7</a><a href="#room8">room 8</a></li>
+    </ol>
+
+    <h3>Terms (one meaning each, across the page)</h3>
+    <div class="terms">
+      <div><b>table</b>: a particle's list of cells, each with an arrow. Two particles that met share one joint table.</div>
+      <div><b>line</b>: one outcome the table could still come to. <span class="sf">Stands for: a branch.</span></div>
+      <div><b>length</b>: the size of a line's arrow. <b>turn</b>: a move that shifts length between lines.</div>
+      <div><b>cell</b>: an equal piece of a line. A line of length √n is n cells, and its odds are its share of the cells.</div>
+      <div><b>meeting</b>: the only move. One table copies the other's line, and the two become one table. <span class="sf">Stands for: entanglement (a CNOT).</span></div>
+      <div><b>look</b>: a partial meeting [controlled interaction], turned only part of the way. An untouched witness's look of angle φ leaves a factor cos φ of the original fringe contrast recoverable [interference visibility]; 90° is a full copy.</div>
+      <div><b>promise</b>: a joint table where no line is written yet. All its lines are still there.</div>
+      <div><b>book</b>: what one particle holds about the outcome. <b>counterparty</b>: all the other books that hold the promise, together. The odds come from the contract: a lone book gets only what symmetry forces, never odds from its lengths; the lengths become odds once a counterparty holds the other side.</div>
+      <div><b>holder</b>: a particle that holds the promise. <b>touch</b>: one holder's light contact in a meeting: usually nothing, sometimes one line, with a chance set by its length.</div>
+      <div><b>settlement</b>: the first meeting where two holders touch the same line; the line is <b>written</b> for every holder. A <b>miss</b> leaves nothing. <span class="sf">Stands for: a measurement outcome.</span></div>
+      <div><b>witness</b>: any particle that meets the settled one later; it can only copy. A <b>copy</b> is what its meeting can do: repeat the line.</div>
+      <div><b>crowd</b> / <b>chain</b>: witnesses who each look at the fact directly / who each hear it from the one before.</div>
+      <div><b>undo</b>: reversing meetings, last first. <b>reach</b>: which books an undo can touch.</div>
+      <div><b>fact</b>: a written line that no undo within reach can take back. <span class="sf">Stands for: a classical record.</span></div>
+    </div>
+
+    <h3>How sure each room is</h3>
+    <p><span class="chip der">derived</span> proved, or checked exactly, from the rules. <span class="chip mea">measured on the toy</span>
+    counted on our model. <span class="chip opn">result forced · process installed</span> the outcome follows; the way it is
+    produced is put in by hand. <span class="chip no">not emerged</span> the rules do not produce it.</p>
+  </section>
+
+  <div class="toc">
+    <a href="#room1"><span class="n">room 1</span><b>The meeting is the same</b><br><span class="chip mea">measured on the toy</span> A detector's first touch is a marker's meeting. What differs is who else hears.</a>
+    <a href="#room2"><span class="n">room 2</span><b>The handshake room</b><br><span class="chip opn">odds derived · touch installed</span> Newcomers copy; two holders who meet get a chance. The first match writes the line for everyone.</a>
+    <a href="#room3"><span class="n">room 3</span><b>One write, then copies</b><br><span class="chip mea">measured on the toy</span> Written once. Everyone after copies. Re-signing contradicts; voting kills the square.</a>
+    <a href="#room4"><span class="n">room 4</span><b>Permanence is reach</b><br><span class="chip mea">measured on the toy</span> An undo must reach every book. The chance falls geometrically: Nakamoto's shape.</a>
+    <a href="#room5"><span class="n">room 5</span><b>Evidence adds up; hearsay doesn't</b><br><span class="chip der">derived</span> Direct looks multiply. A chain of retellings sticks at its first link, even when the undo reaches most of it.</a>
+    <a href="#room6"><span class="n">room 6</span><b>Where the write sits is invisible</b><br><span class="chip mea">measured on the toy</span> Miss one witness and the whole table predicts what the narrowed one does.</a>
+    <a href="#room7"><span class="n">room 7</span><b>A fact for which reading?</b><br><span class="chip mea">measured on the toy</span> A copy nobody's later reading can contradict is a dead letter.</a>
+    <a href="#room8"><span class="n">room 8</span><b>The cat is a fork</b><br><span class="chip mea">measured on the toy</span> Decided inside the box, unreceived until your first link.</a>
+    <a href="#installed"><span class="n">after</span><b>What is still installed</b><br><span class="chip opn">result forced · process installed</span> <span class="chip no">not emerged</span> The confession, and what is left to decide.</a>
+  </div>
+
+  <div class="bar">
+    <span class="lbl">The particle P, two lines, lengths</span>
+    <select id="preset"></select>
+    <span class="where" id="presetInfo"></span>
+  </div>
+
+  <!-- ROOM 1 -->
+  <section class="panel" id="room1">
+    <div class="phead"><span class="n">room 1</span><h2>The meeting is the same</h2><span class="chip mea">measured on the toy</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">presets</span>
+          <button data-r1="0,90">#18's marker</button><button data-r1="6,90">a detector</button><button data-r1="6,30">a weak detector</button></div>
+        <svg id="r1net" viewBox="0 0 420 180" width="100%" style="max-width:440px"></svg>
+        <div class="ctl"><label for="r1d">witnesses</label><input id="r1d" type="range" min="0" max="6" value="0"><span class="out" id="r1dOut"></span></div>
+        <div class="ctl"><label for="r1phi">look</label><input id="r1phi" type="range" min="0" max="90" step="5" value="90"><span class="out" id="r1phiOut"></span></div>
+        <div class="msg" id="r1msg"></div>
+      </div>
+      <div class="say">
+        <p>P meets M. That first touch is the same meeting whether M is #18's marker or a particle of a detector: a promise,
+        two lines, nothing written.</p>
+        <p>The difference comes after. An isolated marker keeps the trace to itself. A detector particle passes it to its
+        neighbours [environment fragments]. Each meeting extends the shared wave; no line is selected here.</p>
+        <p>Before detecting P, we reverse its joint meeting with M [inverse unitary operation]. This undo reaches P and M,
+        but not the crowd. With no escaped trace, subsequent P readings recover the full fringe. #18 used a different move:
+        turn M, read it, and sort already recorded P results [conditional interference]. That leaves the unsorted results unchanged.</p>
+        <p class="rule">A detector is a marker whose trace spreads. The escaped correlations suppress interference in P's
+        readings alone [decoherence], even after we undo the P–M meeting.</p>
+        <p>Nothing here picks the line. Room 2 supplies a separate toy rule for choosing an answer; this room tests how much
+        interference a limited undo can recover.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 2 -->
+  <section class="panel" id="room2">
+    <div class="phead"><span class="n">room 2</span><h2>The handshake room: where a line is written</h2><span class="chip opn">odds derived · touch installed</span></div>
+    <div class="cols">
+      <div class="viz">
+        <svg id="hnet" viewBox="0 0 420 230" width="100%" style="max-width:440px"></svg>
+        <div class="btns"><button id="hstep">Next meeting</button><button id="hend">Run to the write</button><button id="hnew">New run</button><button id="hrun">Run 20,000</button></div>
+        <div class="msg" id="hmsg"></div>
+        <div class="tally" id="htally"></div>
+        <details class="fold" id="hfold">
+          <summary>Variations: other crowds, and other ways to put the two touches together</summary>
+          <div class="presets"><span class="lbl">presets</span>
+            <button data-h="two,3">four particles (as above)</button><button data-h="tree,6">a lone thread</button><button data-h="two,8">two chains that close</button><button data-h="ring,8">a ring of nine</button><button data-h="crowd,16">a room of friends</button></div>
+          <div class="btns"><span class="seg" id="hwiring"><button data-w="tree">a tree</button><button data-w="two" class="on">two chains</button><button data-w="ring">a ring</button><button data-w="crowd">a crowd</button></span></div>
+          <div class="ctl"><label for="hn">others besides P</label><input id="hn" type="range" min="1" max="16" value="3"><span class="out" id="hnOut"></span></div>
+          <div class="ctl"><label for="heps">touch strength</label><input id="heps" type="range" min="0.1" max="0.5" step="0.05" value="0.4"><span class="out" id="hepsOut"></span></div>
+          <p class="tcap" style="margin:8px 0 0">HOW ARE THE TWO TOUCHES PUT TOGETHER?</p>
+          <div class="btns"><span class="seg" id="hwin"><button data-v="meeting" class="on">inside one meeting</button><button data-v="wait">a pick that waits</button><button data-v="pooled">a busy side pooled</button></span>
+            <button id="hwinrun">Run 20,000</button></div>
+          <div class="tally" id="hwintally"></div>
+        </details>
+      </div>
+      <div class="say">
+        <p>P has met D: a promise, nothing written (room 1). Now each of them shakes one more hand, and the two newcomers
+        meet each other.</p>
+        <p><b>A handshake with a newcomer is a copy.</b> The newcomer holds the promise too. Nothing is written, and the
+        step can still be undone.</p>
+        <p><b>A handshake between two holders is a chance.</b> Each makes one light touch. Usually it lands nowhere.
+        Sometimes it lands on a line, with a chance set by that line's length.</p>
+        <p>The first time both touches land on the same line, that line is written for every holder at once. Length times
+        length: the square. Nobody proposes, compares or refuses. A miss leaves nothing behind, and the number of misses
+        before the write is the same on every table, so even someone counting them would learn nothing.</p>
+        <p class="rule">A line is written at the first handshake where two holders' touches land on the same line. The crowd
+        makes the chances, not the choice: its wiring decides when and where, never the odds.</p>
+        <p>Other crowds (a lone thread that never writes, a ring, a room of friends) and other ways of putting the two
+        touches together are under Variations below the picture. They change when and where the write comes, never the odds.</p>
+        <div class="open"><b>Told to the toy.</b> The touch itself: first order in the line's length, and fresh each time. No
+        visible meeting can make such a touch, because every event in the visible tables comes out squared; so on the toy it
+        is read from each particle's hidden clock, which must be chaotic. Here a fixed-seed generator stands in for the clocks.
+        Where the touch comes from belongs to another episode. And the laptop plays one handshake at a time: what this room
+        shows is the order of events and the odds, not how long they take.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 3 -->
+  <section class="panel" id="room3">
+    <div class="phead"><span class="n">room 3</span><h2>One write, then copies</h2><span class="chip mea">measured on the toy</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">presets</span>
+          <button data-r2="copy">copy (the toy)</button><button data-r2="resign">everyone re-signs</button><button data-r2="vote">all must agree</button></div>
+        <div class="ctl"><label for="r2w">witnesses</label><input id="r2w" type="range" min="0" max="8" value="3"><span class="out" id="r2wOut"></span></div>
+        <div class="btns"><span class="seg" id="r2mode"><button data-m="copy" class="on">copy</button><button data-m="resign">re-sign</button><button data-m="vote">vote</button></span>
+          <button id="r2run">Run 20,000 settlements</button></div>
+        <div class="tally" id="r2tally"></div>
+        <div class="msg" id="r2msg"></div>
+      </div>
+      <div class="say">
+        <p>Once a line is written, witnesses meet the settled particle. What can their meeting do?</p>
+        <p><b>Copy.</b> A witness that meets a particle whose line is already written sees a table with one line left, so it can
+        only copy. The odds stay the square, however many witnesses come.</p>
+        <p><b>Re-sign.</b> If every witness rolled its own lottery on the whole table, it would contradict the books already
+        written, about one link in three.</p>
+        <p><b>Vote.</b> If all books had to agree before anything counts, the longer line would win almost always. That is
+        majority rule, and the square is gone by the third book. It is also how a folk tale spreads: the catchiest version wins.</p>
+        <p class="rule">There is one write, at the first match. Every later meeting copies. Spread buys permanence, not
+        odds.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 4 -->
+  <section class="panel" id="room4">
+    <div class="phead"><span class="n">room 4</span><h2>Permanence is reach</h2><span class="chip mea">measured on the toy</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">presets</span>
+          <button data-r3="0,0.9">a marker, a strong undo</button><button data-r3="6,0.3">six confirmations</button><button data-r3="8,0.5">a detector</button></div>
+        <div class="ctl"><label for="r3w">witnesses</label><input id="r3w" type="range" min="0" max="8" value="3"><span class="out" id="r3wOut"></span></div>
+        <div class="ctl"><label for="r3q">reach</label><input id="r3q" type="range" min="0.05" max="0.95" step="0.05" value="0.5"><span class="out" id="r3qOut"></span></div>
+        <div class="msg" id="r3msg"></div>
+        <svg id="r3chart" viewBox="0 0 420 250" width="100%" style="max-width:440px"></svg>
+      </div>
+      <div class="say">
+        <p>To undo a fact, you must undo every meeting that copied it, last one first. That means reaching every book that
+        holds it: P's, M's and each witness's.</p>
+        <p>Give the undo a chance to reach each book (the "reach" dial). It undoes the fact only if it reaches them all.</p>
+        <p class="rule">The chance of an undo falls geometrically with the books that hold the fact. That is the shape of
+        Nakamoto's catch-up odds: every confirmation multiplies the attacker's chance by the same factor.</p>
+        <p>Nothing forbids the undo. It just stops being reachable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 5 -->
+  <section class="panel" id="room5">
+    <div class="phead"><span class="n">room 5</span><h2>Evidence adds up; hearsay doesn't</h2><span class="chip der">derived</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">presets</span>
+          <button data-r4="3,0.75,star,0">three friends, told directly</button><button data-r4="6,0.75,chain,0">a telephone of six</button><button data-r4="1,1,star,0">one perfect look</button><button data-r4="8,0.2928932188,chain,0.8">an undo that reaches 4 in 5</button></div>
+        <svg id="r4net" viewBox="0 0 420 180" width="100%" style="max-width:440px"></svg>
+        <div class="ctl"><label for="r4d">witnesses</label><input id="r4d" type="range" min="1" max="8" value="3"><span class="out" id="r4dOut"></span></div>
+        <div class="ctl"><label for="r4p">copy takes</label><input id="r4p" type="range" min="0.05" max="1" step="any" value="0.75"><span class="out" id="r4pOut"></span></div>
+        <div class="ctl"><label for="r4rho">undo reaches</label><input id="r4rho" type="range" min="0" max="0.95" step="0.05" value="0"><span class="out" id="r4rhoOut"></span></div>
+        <div class="btns"><span class="seg" id="r4wiring"><button data-w="star" class="on">crowd: each looks at M</button><button data-w="chain">chain: each tells the next</button></span></div>
+        <div class="msg" id="r4msg"></div>
+        <svg id="r4chart" viewBox="0 0 420 250" width="100%" style="max-width:440px"></svg>
+      </div>
+      <div class="say">
+        <p>Simple form first. Each copy takes with some chance ("copy takes"). The fact can be erased only in the branch
+        where nobody knows it.</p>
+        <p><b>A crowd:</b> M tells three friends directly. Everyone fails only if all three fail: at 3 in 4, one in 64.
+        <b>A chain:</b> M tells W1, W1 tells W2, W2 tells W3. If W1 failed, everyone after is silent: one in 4, however long
+        the chain.</p>
+        <p>The chart shows the corresponding wave calculation: a witness's look turns it a little, and the fringe contrast
+        recoverable before detection is set by the looks nobody undid. With cos(look) equal to the chance a copy fails in
+        the counting analogy, the numbers are the same; the wave calculation retains both alternatives.</p>
+        <p><b>With a reach.</b> Now let the undo reach each witness with some chance ("undo reaches") and undo, last first,
+        every look it reaches. From a crowd, what comes back still falls by the same factor per witness: geometric, room 4's
+        shape. From a chain it levels off after a few links. Missing a link costs only what the shallowest missed link costs;
+        deeper misses cost nothing more.</p>
+        <p class="rule">A factor per unreached direct witness, and the factors multiply. A witness of a witness adds a
+        listener, not a look. Evidence adds up; hearsay doesn't.</p>
+        <p>This is why a Bitcoin confirmation counts: every block re-hashes the history itself, a fresh direct look, not a
+        forwarded opinion. Gossip that only forwards is spread without finality.</p>
+        <p><b>Two threads.</b> After P meets D, P's later meetings and D's later meetings are two sub-trees of the fact.
+        Each sub-tree costs the undo its own factor, and inside each, only the shallowest missed link counts.</p>
+        <p><b>Proved on the toy.</b> The shallowest-link rule, the crowd's product and both averages are exact identities for
+        chains and crowds of any length (the message box prints the formulas). Each unreached direct witness is worth the
+        same amount of finality: half a bit for a 45° look.</p>
+        <p>The shallowest-link rule and the crowd's product are a machine-checked proof (Lean 4, Mathlib) for any number of
+        witnesses. One honest clause: it is proved for a line-by-line copy of the toy's code in Lean, which reproduces every
+        number the toy ever stored; for looks between 0° and 90°.</p>
+        <div class="open"><b>Independent witnesses only.</b> The product and "deeper misses cost nothing more" hold for
+        witnesses that start clean and separate. Witnesses that already share a record along the look's direction count as
+        one look of the summed angle, and a matched pair can hide the look completely. The product is the independent case of
+        that more general law.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 6 -->
+  <section class="panel" id="room6">
+    <div class="phead"><span class="n">room 6</span><h2>Where the write sits is invisible</h2><span class="chip mea">measured on the toy</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">presets</span>
+          <button data-r5="P,45">turn P, miss everyone</button><button data-r5="PM,45">reach P and M, miss the witness</button><button data-r5="all,45">reach everything</button></div>
+        <div class="ctl"><label for="r5a">turn</label><input id="r5a" type="range" min="0" max="90" step="5" value="45"><span class="out" id="r5aOut"></span></div>
+        <div class="btns"><span class="seg" id="r5reach"><button data-r="P" class="on">reach P</button><button data-r="PM">P and M</button><button data-r="all">everything</button></span></div>
+        <div class="tally" id="r5tally"></div>
+        <div class="msg" id="r5msg"></div>
+      </div>
+      <div class="say">
+        <p>P has met M, and a witness W has copied M. Now someone turns P and reads it. Two ways to predict the reading:</p>
+        <p><b>The whole table.</b> Nothing is ever cut; just run the turn on the joint table of P, M and W.</p>
+        <p><b>The narrowed table.</b> Pretend a match already wrote one line, then turn that line alone, and average.</p>
+        <p class="rule">As long as the move misses at least one book that holds the fact, the two predictions agree exactly.
+        Narrowing is conditioning on the books beyond reach. The table never narrows.</p>
+        <p>So nobody who misses a witness can tell where, or whether, the line was written. Only a move that reaches every
+        book sees the difference: the fringe comes back.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 7 -->
+  <section class="panel" id="room7">
+    <div class="phead"><span class="n">room 7</span><h2>A fact for which reading?</h2><span class="chip mea">measured on the toy</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">presets</span>
+          <button data-r6="0">a straight reading</button><button data-r6="45">a quarter turn first</button><button data-r6="20">a small turn</button></div>
+        <div class="ctl"><label for="r6a">turn</label><input id="r6a" type="range" min="0" max="90" step="5" value="0"><span class="out" id="r6aOut"></span></div>
+        <div class="tally" id="r6tally"></div>
+        <div class="msg" id="r6msg"></div>
+      </div>
+      <div class="say">
+        <p>A witness copies P's line and goes away. Later somebody reads P, straight or after a turn. Does the copy matter?</p>
+        <p>Compare the reading with the copy and without it. After a straight reading the two agree exactly: the copy
+        told the world nothing the reading would not have said anyway. After a turn they differ: the copy has removed the
+        fringe the turn would have shown.</p>
+        <p class="rule">A copy is a fact only for a reading that could contradict it. The same entry is a fact under one later
+        turn and a dead letter under another, and the late choice signals nothing.</p>
+        <p>On the toy, more than half of what the vacuum writes is a fact for nobody in this sense (55.6% on the meter).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 8 -->
+  <section class="panel" id="room8">
+    <div class="phead"><span class="n">room 8</span><h2>The cat is a fork</h2><span class="chip mea">measured on the toy</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div class="presets"><span class="lbl">steps</span>
+          <button id="r7next">Next meeting</button><button id="r7reset">Reset</button></div>
+        <svg id="r7net" viewBox="0 0 420 170" width="100%" style="max-width:440px"></svg>
+        <div class="tally" id="r7tally"></div>
+        <div class="msg" id="r7msg"></div>
+      </div>
+      <div class="say">
+        <p>Inside a sealed box: an atom A, a detector D, the cat C. Outside: you, O. Step through the meetings.</p>
+        <p>The atom meets the detector, the detector meets the cat: copies. Inside the box the holders keep meeting, and the
+        first match writes the line, somewhere in the box (room 2). The cat's book agrees with the detector's completely. Across the box wall there is nothing: your book knows
+        nothing about the cat.</p>
+        <p>Opening the box is your first link: your book copies the cat's.</p>
+        <p class="rule">Decided inside the box, unreceived until your first link. "Alive and dead" is the outside's table,
+        not the cat. Opening the box does not create the fact; it delivers it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATIC -->
+  <section class="static" id="installed">
+    <h2>What is still installed</h2>
+    <p>What the toy is still told, one item per open question about the settlement. Everything else on this page follows from meetings.</p>
+    <ul>
+      <li><span class="chip opn">result forced · touch installed</span> <b>The touch.</b> Which meetings settle now
+      follows from meetings: any meeting of two holders is a chance (room 2). What the toy is still told is the touch: first
+      order in the line's length, and fresh each time. A touch with memory, or a pick that waits for a match, misses the
+      square. No visible meeting can make such a touch, because every event in the visible tables comes out squared; so the
+      touch lives below the waterline, read from each particle's hidden clock. Its misses leave no record, and their count is
+      the same on every table, so it reads nobody's setting.</li>
+      <li><span class="chip opn">set by the touch</span> <b>How fast a line is written.</b> About π²/(4ε²) chances after
+      the record reaches a second holder, where ε is the touch's strength: fifteen at the bench's 0.4. Nature's strength is
+      not known. The laptop plays one meeting at a time; the bench shows the order of events (copies first, then the first
+      match, never earlier), not how long it takes.</li>
+      <li><span class="chip opn">checked on the toy</span> <b>Spare particles.</b> The split into equal cells needs spare
+      particles. On the toy they always exist and change no odds. For nature it is assumed that a fresh particle is always
+      available.</li>
+      <li><span class="chip opn">claimed harmless</span> <b>An undo is out of reach, never impossible.</b> Textbook collapse
+      is absolute; in the copy models, a joint undo that reaches every book restores interference before the final readout (rooms 4 and 6). We claim no real undo
+      reaches every link of a real crowd. That claim is not measured yet.</li>
+      <li><span class="chip no">not emerged</span> <b>Which line.</b> Meetings fix the odds, not the line. The line the books
+      land on is the hidden variable, and it belongs to another episode.</li>
+      <li>Also told: the dial angles and the prepared word. Every curve here is standard quantum mechanics (decoherence, the
+      eraser, envariance). What the piece adds: the write at the first match among holders, and the reach law read as consensus.</li>
+    </ul>
+  </section>
+
+  <section class="static" id="open">
+    <h2>Still to decide before drafting</h2>
+    <ul>
+      <li><b>Companion evidence:</b> the crowd and the chain as standard circuits (room 5's chart), on a simulator.</li>
+      <li><b>Reversal by count, not by precision:</b> to undo sixteen witnesses, the undo must hold sixteen angles, and
+      none of them much finer than for two. So a ledger's finality is not chaos. One sentence in room 4's story, or a dial there.</li>
+      <li><b>The vacuum as the crowd nobody can un-swap:</b> one paragraph or the Next-time tease.</li>
+      <li><b>Room 3's software furniture:</b> Bitcoin's confirmations and the reorg. Git stays #18's.</li>
+      <li><b>The folklore opener:</b> room 3's vote row is the telephone game; verify the Bartlett and iterated-learning citations before quoting.</li>
+      <li><b>Optional:</b> what one fragment of the crowd knows against its size (quantum Darwinism's own figure).</li>
+      <li><b>Ties:</b> when two matches happen at once on different lines, any order that does not look at the line keeps
+      the square; an order that prefers a line turns a busy crowd into majority rule. Simulated on the room's own rules.
+      "Does not look" means the order is independent of the touches' reads; an order made by the same hidden clocks as the
+      touches is the case still open.</li>
+    </ul>
+  </section>
+
+  <p class="notclaimed"><b>What this bench does not claim.</b> Rooms 1, 5, 6, 7 and 8 are standard quantum mechanics on a
+  few qubits (decoherence, the quantum eraser, Wigner's friend); rooms 3 and 4 are counting. Room 2 is the toy's own
+  settlement: its odds are the square, as in quantum mechanics, but the touch is put in by hand, and its picks come from a
+  fixed-seed generator standing in for hidden clocks. The neighbours are Zurek
+  (decoherence, envariance, quantum Darwinism), Ollivier, Poulin and Zurek, Rovelli's relative facts, Cramer's offer and confirmation, and Nakamoto 2008,
+  section 11. What the bench adds is the ledger picture. It does not produce which line comes true. Line 1 carries a fixed
+  phase of 60°; any phase gives the same results. Random counts use a fixed seed, so a rerun prints the same numbers.</p>
+</div>
+
+<script id="engine">
+// All physics here: pure functions, no DOM. Checked under node: mechanism.tests.js (skill test-bench).
+const cabs = z => Math.hypot(z[0], z[1]);
+const carg = z => Math.atan2(z[1], z[0]);
+const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)];
+const PHASE1 = Math.PI / 3;
+const D2R = Math.PI / 180;
+
+function lineAmps(n0, n1) {
+  const N = n0 + n1;
+  return [polar(Math.sqrt(n0 / N), 0), polar(Math.sqrt(n1 / N), PHASE1)];
+}
+function newState(n) { const d = 1 << n; return { n, re: new Float64Array(d), im: new Float64Array(d) }; }
+function prep(s, q, n0, n1) {                    // particle q gets P's two lines, everything else in cell 0
+  const [z0, z1] = lineAmps(n0, n1);
+  s.re[0] = z0[0]; s.im[0] = z0[1]; s.re[1 << q] = z1[0]; s.im[1 << q] = z1[1];
+}
+function cx(s, c, t) {                           // a meeting: t copies c's line
+  const d = 1 << s.n;
+  for (let i = 0; i < d; i++) if ((i >> c & 1) && !(i >> t & 1)) {
+    const j = i | (1 << t);
+    let x = s.re[i]; s.re[i] = s.re[j]; s.re[j] = x;
+    x = s.im[i]; s.im[i] = s.im[j]; s.im[j] = x;
+  }
+}
+function rot(s, q, th, c) {                      // turn q by th/2; if c is given, only where c's line is 1
+  const d = 1 << s.n, co = Math.cos(th / 2), si = Math.sin(th / 2);
+  for (let i = 0; i < d; i++) if ((c === undefined || (i >> c & 1)) && !(i >> q & 1)) {
+    const j = i | (1 << q), ar = s.re[i], ai = s.im[i], br = s.re[j], bi = s.im[j];
+    s.re[i] = co * ar - si * br; s.im[i] = co * ai - si * bi;
+    s.re[j] = si * ar + co * br; s.im[j] = si * ai + co * bi;
+  }
+}
+function probZero(s, q) { let p = 0; for (let i = 0; i < (1 << s.n); i++) if (!(i >> q & 1)) p += s.re[i] ** 2 + s.im[i] ** 2; return p; }
+function coherence(s, q) {
+  const d = 1 << s.n; let r = 0, m = 0;
+  for (let i = 0; i < d; i++) if (!(i >> q & 1)) {
+    const j = i | (1 << q);
+    r += s.re[i] * s.re[j] + s.im[i] * s.im[j];
+    m += s.im[i] * s.re[j] - s.re[i] * s.im[j];
+  }
+  return Math.hypot(r, m);
+}
+function zz(s, a, b) {                           // normalised correlation of two books' lines; 0 if either is sharp
+  let za = 0, zb = 0, zab = 0;
+  for (let i = 0; i < (1 << s.n); i++) {
+    const p = s.re[i] ** 2 + s.im[i] ** 2, sa = (i >> a & 1) ? -1 : 1, sb = (i >> b & 1) ? -1 : 1;
+    za += p * sa; zb += p * sb; zab += p * sa * sb;
+  }
+  const va = 1 - za * za, vb = 1 - zb * zb;
+  return va < 1e-12 || vb < 1e-12 ? 0 : (zab - za * zb) / Math.sqrt(va * vb);
+}
+function rng(seed) {                             // mulberry32: fixed seed, same counts every run
+  let a = seed >>> 0;
+  return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+// rooms 1, 4: P = 0, M = 1, witness j = 1 + j. The undo reverses, last first, the P-M meeting and every look j
+// whose bit j - 1 is set in mask. Returns recovered P coherence / initial P coherence (the relative fringe visibility).
+function witnessMask(n0, n1, d, phiDeg, wiring, mask) {
+  const s = newState(2 + d), [z0, z1] = lineAmps(n0, n1);
+  prep(s, 0, n0, n1);
+  const th = 2 * phiDeg * D2R, gates = [['cx', 0, 1, 0, true]];
+  for (let j = 1; j <= d; j++) gates.push(['look', wiring === 'star' || j === 1 ? 1 : j, 1 + j, th, (mask >> (j - 1) & 1) === 1]);
+  for (const g of gates) g[0] === 'cx' ? cx(s, g[1], g[2]) : rot(s, g[2], g[3], g[1]);
+  for (const g of gates.slice().reverse()) if (g[4]) g[0] === 'cx' ? cx(s, g[1], g[2]) : rot(s, g[2], -g[3], g[1]);
+  return coherence(s, 0) / (cabs(z0) * cabs(z1));
+}
+// the undo reaches the first k witnesses (in a chain: the k nearest M)
+const witnessRun = (n0, n1, d, phiDeg, wiring, k) => witnessMask(n0, n1, d, phiDeg, wiring, (1 << Math.min(k, d)) - 1);
+// room 4 with a reach: the undo reaches each witness with chance rho; the average over every reach pattern, exactly
+function reachAverage(n0, n1, d, phiDeg, wiring, rho) {
+  let e = 0;
+  for (let mask = 0; mask < (1 << d); mask++) {
+    let w = 1; for (let j = 0; j < d; j++) w *= (mask >> j & 1) ? rho : 1 - rho;
+    if (w) e += w * witnessMask(n0, n1, d, phiDeg, wiring, mask);
+  }
+  return e;
+}
+// the laws the average should follow: the crowd geometric, the chain by its shallowest missed link, and its floor
+const crowdLaw = (d, phiDeg, rho) => (rho + (1 - rho) * Math.cos(phiDeg * D2R)) ** d;
+const chainMiss = (j, phiDeg) => 1 - (1 - Math.cos(phiDeg * D2R)) * Math.sin(phiDeg * D2R) ** (2 * (j - 1));
+function chainLaw(d, phiDeg, rho) {
+  let e = rho ** d; for (let j = 1; j <= d; j++) e += rho ** (j - 1) * (1 - rho) * chainMiss(j, phiDeg);
+  return e;
+}
+const bitsPerWitness = phiDeg => -Math.log2(Math.cos(phiDeg * D2R));   // finality each unreached direct witness adds
+const chainFloor = (phiDeg, rho) => 1 - (1 - Math.cos(phiDeg * D2R)) * (1 - rho) / (1 - rho * Math.sin(phiDeg * D2R) ** 2);
+
+// room 2: the handshake room. Particle 0 is P and holds the promise; 1 is D; 2.. are W1, W2, ...
+// A meeting of a holder and a newcomer copies. A meeting of two holders is a chance: each makes one light touch, which
+// lands on line k with chance (2 eps / pi) x the length of k and otherwise nowhere; both on the same k writes k for all.
+// (On the toy the touch is read from each particle's hidden clock; here a fixed-seed generator stands in for it.)
+function touchSlots(n0, n1, eps) { const [z0, z1] = lineAmps(n0, n1), c = 2 * eps / Math.PI; return [c * cabs(z0), c * cabs(z1)]; }
+const touch = (u, w) => u < w[0] ? 0 : u < w[0] + w[1] ? 1 : -1;
+const settleChance = eps => 4 * eps * eps / (Math.PI * Math.PI);        // per meeting of two holders, the same on every table
+function makeSchedule(wiring, n, seed) {
+  if (wiring === 'crowd') {                                             // random handshakes among P and n others
+    const r = rng(seed);
+    return () => { const a = Math.floor(r() * (n + 1)); let b = Math.floor(r() * n); if (b >= a) b++; return [a, b]; };
+  }
+  const spread = [], loop = [];
+  for (let j = 1; j <= n; j++) spread.push([wiring === 'tree' ? (j - 1) >> 1 : wiring === 'two' ? Math.max(0, j - 2) : j - 1, j]);
+  if (wiring === 'ring') { loop.push([n, 0]); for (let j = 1; j <= n; j++) loop.push([j - 1, j]); }
+  if (wiring === 'two') {                                               // P's chain: 0, 2, 4, ...; D's chain: 1, 3, 5, ...
+    for (let k = 0; 2 * k + 1 <= n; k++) loop.push([2 * k, 2 * k + 1]);
+    if (n % 2 === 0 && n >= 2) loop.push([n, n - 1]);
+    loop.reverse();                                                     // the two chains close at their far ends first
+  }
+  return i => i < spread.length ? spread[i] : loop.length ? loop[(i - spread.length) % loop.length] : null;
+}
+function handshakeRun(n0, n1, eps, wiring, n, seed, keepLog = false, cap = 4000) {
+  const w = touchSlots(n0, n1, eps), rt = rng(seed * 7919 + 17), next = makeSchedule(wiring, n, seed);
+  const hold = new Uint8Array(n + 1), log = []; hold[0] = 1;
+  let meetings = 0, chances = 0;
+  const holders = () => hold.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < cap; i++) {
+    const pr = next(i); if (!pr) break;
+    const [a, b] = pr; meetings++;
+    if (hold[a] && hold[b]) {
+      chances++; const ta = touch(rt(), w), tb = touch(rt(), w);
+      if (keepLog) log.push({ a, b, kind: 'chance', ta, tb });
+      if (ta >= 0 && ta === tb) return { written: true, line: ta, meetings, chances, atP: a === 0 || b === 0, holders: holders(), log };
+    } else if (hold[a] || hold[b]) { hold[a] = hold[b] = 1; if (keepLog) log.push({ a, b, kind: 'copy' }); }
+    else if (keepLog) log.push({ a, b, kind: 'none' });
+  }
+  return { written: false, line: -1, meetings, chances, atP: false, holders: holders(), log };
+}
+function handshakeTally(n0, n1, eps, wiring, n, trials, seed) {
+  let w0 = 0, wr = 0, ch = 0, ch2 = 0, atP = 0, hd = 0;
+  for (let t = 0; t < trials; t++) {
+    const r = handshakeRun(n0, n1, eps, wiring, n, seed + t);
+    if (!r.written) continue;
+    wr++; if (r.line === 0) w0++; ch += r.chances; ch2 += r.chances * r.chances; if (r.atP) atP++; hd += r.holders;
+  }
+  const mc = wr ? ch / wr : 0;
+  return { written: wr, share0: wr ? w0 / wr : 0, meanChances: mc, seChances: wr ? Math.sqrt(Math.max(0, ch2 / wr - mc * mc) / wr) : 0,
+           atP: wr ? atP / wr : 0, holders: wr ? hd / wr : 0 };
+}
+const ringAtP = (eps, n) => { const s = settleChance(eps); return s * (2 - s) / (1 - (1 - s) ** (n + 1)); };
+// how the two touches are put together: inside one meeting (the toy), a pick that waits for a match, or a busy side
+// of m members pooled over one tick. Returns the share of line 0 among the writes.
+function windowRun(n0, n1, eps, mode, m, trials, seed) {
+  const r = rng(seed), w = touchSlots(n0, n1, eps); let z = 0;
+  for (let t = 0; t < trials; t++) {
+    if (mode === 'meeting') { for (;;) { const a = touch(r(), w), b = touch(r(), w); if (a >= 0 && a === b) { if (!a) z++; break; } } }
+    else if (mode === 'wait') {
+      const pick = [-1, -1];
+      for (let done = false; !done;) for (const s of [0, 1]) {
+        const k = touch(r(), w); if (k < 0) continue;
+        if (pick[1 - s] === k) { if (!k) z++; done = true; break; }
+        pick[s] = k;
+      }
+    } else {
+      for (;;) {
+        const a = touch(r(), w); let hit = false;
+        if (a >= 0) for (let j = 0; j < m; j++) if (touch(r(), w) === a) hit = true;
+        if (hit) { if (!a) z++; break; }
+      }
+    }
+  }
+  return z / trials;
+}
+const lengthShare = (n0, n1) => Math.sqrt(n0) / (Math.sqrt(n0) + Math.sqrt(n1));
+const waitLaw = (n0, n1) => { const q = lengthShare(n0, n1); return q * q * (1 + 2 * (1 - q)); };   // the small-strength limit
+const pooledLaw = (n0, n1, eps, m) => { const w = touchSlots(n0, n1, eps), x = w.map(v => v * (1 - (1 - v) ** m)); return x[0] / (x[0] + x[1]); };
+
+// room 3: the first match draws by the square; later witnesses copy, re-sign, or all books must agree (needles by length).
+function signRun(n0, n1, w, mode, trials, seed) {
+  const r = rng(seed), p0 = n0 / (n0 + n1), s = Math.sqrt(n0) / (Math.sqrt(n0) + Math.sqrt(n1));
+  let zero = 0, contra = 0, links = 0, tries = 0;
+  for (let t = 0; t < trials; t++) {
+    if (mode === 'vote') {
+      for (;;) {
+        tries++;
+        const first = r() < s ? 0 : 1; let ok = true;
+        for (let b = 1; b < w + 2; b++) if ((r() < s ? 0 : 1) !== first) { ok = false; break; }
+        if (ok) { if (first === 0) zero++; break; }
+      }
+    } else {
+      const line = r() < p0 ? 0 : 1; if (line === 0) zero++;
+      for (let j = 0; j < w; j++) { links++; if (mode === 'resign' && (r() < p0 ? 0 : 1) !== line) contra++; }
+    }
+  }
+  return { share0: zero / trials, contradictions: links ? contra / links : 0, triesPer: tries / trials };
+}
+const voteShare = (n0, n1, books) => { const a = Math.pow(n0, books / 2), b = Math.pow(n1, books / 2); return a / (a + b); };
+
+// room 3: the undo reaches each of the 2 + w books with chance q; the fact falls only if it reaches them all.
+function reachRun(q, w, trials, seed) {
+  const r = rng(seed); let undone = 0;
+  for (let t = 0; t < trials; t++) { let all = true; for (let b = 0; b < 2 + w; b++) if (r() >= q) { all = false; break; } if (all) undone++; }
+  return undone / trials;
+}
+
+// room 4, simple form: each copy takes with chance p; the fact is erasable only where no witness knows it.
+function copiesRun(p, d, wiring, trials, seed) {
+  const r = rng(seed); let nobody = 0;
+  for (let t = 0; t < trials; t++) {
+    let any = false, prev = true;
+    for (let j = 1; j <= d; j++) {
+      const from = wiring === 'star' ? true : prev, knows = from && r() < p;
+      any = any || knows; prev = knows;
+    }
+    if (!any) nobody++;
+  }
+  return nobody / trials;
+}
+
+// room 5: P = 0, M = 1, W = 2. A move turns P after undoing whatever meetings it reaches; returns P's odds of line 0.
+function wholeTableRun(n0, n1, alphaDeg, reach) {
+  const s = newState(3); prep(s, 0, n0, n1); cx(s, 0, 1); cx(s, 1, 2);
+  if (reach === 'all') { cx(s, 1, 2); cx(s, 0, 1); } else if (reach === 'PM') cx(s, 0, 1);
+  rot(s, 0, 2 * alphaDeg * D2R); return probZero(s, 0);
+}
+function narrowedPrediction(n0, n1, alphaDeg) {
+  const [z0, z1] = lineAmps(n0, n1), a = alphaDeg * D2R;
+  return cabs(z0) ** 2 * Math.cos(a) ** 2 + cabs(z1) ** 2 * Math.sin(a) ** 2;
+}
+
+// room 6: a witness copies P (or not), then P is turned and read.
+function readingRun(n0, n1, alphaDeg, withCopy) {
+  const s = newState(2); prep(s, 0, n0, n1); if (withCopy) cx(s, 0, 1);
+  rot(s, 0, 2 * alphaDeg * D2R); return probZero(s, 0);
+}
+
+// room 7: atom A = 0, detector D = 1, cat C = 2, observer O = 3; step = how many meetings have happened.
+function catRun(n0, n1, step) {
+  const s = newState(4); prep(s, 0, n0, n1);
+  if (step >= 1) cx(s, 0, 1); if (step >= 2) cx(s, 1, 2); if (step >= 3) cx(s, 2, 3);
+  return { AD: zz(s, 0, 1), DC: zz(s, 1, 2), CO: zz(s, 2, 3), AO: zz(s, 0, 3) };
+}
+</script>
+
+<script>
+const PRESETS = [[1, 1], [2, 1], [3, 1], [3, 2], [4, 1], [5, 3]];
+let n0 = 3, n1 = 1;
+const $ = id => document.getElementById(id);
+const f3 = x => x.toFixed(3);
+const pc = x => (100 * x).toFixed(1) + '%';
+const sq = n => n === 1 ? '1' : '√' + n;
+const TRIALS = 20000;
+
+PRESETS.forEach(([a, b], i) => {
+  const o = document.createElement('option'); o.value = i; o.textContent = `${sq(a)} : ${sq(b)}`;
+  if (a === 3 && b === 1) o.selected = true; $('preset').appendChild(o);
+});
+$('preset').onchange = e => { [n0, n1] = PRESETS[+e.target.value]; renderAll(); };
+
+function seg(id, onPick) {
+  document.querySelectorAll(`#${id} button`).forEach(b => b.onclick = () => { setSeg(id, b); onPick(b); });
+}
+function setSeg(id, btn) { document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle('on', x === btn)); }
+function segPick(id, attr, val) { const b = document.querySelector(`#${id} button[data-${attr}="${val}"]`); if (b) setSeg(id, b); }
+const segVal = (id, attr) => document.querySelector(`#${id} button.on`).dataset[attr];
+
+// a network: P and M, witnesses in a star around M or a chain after it; reached = dashed ring
+function netSVG(d, wiring, reached, labels) {
+  const pos = [[28, 90], [96, 90]], W = [];
+  const step = Math.min(50, 300 / Math.max(d, 1));   // a chain of eight still fits
+  for (let j = 1; j <= d; j++) W.push(wiring === 'chain' ? [96 + j * step, 90]
+    : [d > 5 ? (j % 2 ? 230 : 310) : 250, d === 1 ? 90 : 20 + (j - 1) * 140 / (d - 1)]);   // a big crowd zigzags
+  const L = labels || ['P', 'M'];
+  let h = '';
+  const line = (a, b) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" style="stroke:var(--muted);stroke-width:1.5"/>`;
+  h += line(pos[0], pos[1]);
+  W.forEach((w, j) => { h += line(wiring === 'star' || j === 0 ? pos[1] : W[j - 1], w); });
+  const node = (p, lbl, col, filled, ring) => (ring ? `<circle cx="${p[0]}" cy="${p[1]}" r="19" style="fill:none;stroke:var(--p);stroke-width:1.5;stroke-dasharray:3 2"/>` : '') +
+    `<circle cx="${p[0]}" cy="${p[1]}" r="14" style="fill:${filled ? col : 'var(--surface)'};stroke:${col};stroke-width:2"/>
+     <text x="${p[0]}" y="${p[1] + 4}" text-anchor="middle" style="fill:${filled ? 'var(--surface)' : col};font-size:11px;font-weight:600">${lbl}</text>`;
+  h += node(pos[0], L[0], 'var(--p)', true, reached(0)) + node(pos[1], L[1], 'var(--m)', true, reached(1));
+  W.forEach((w, j) => { h += node(w, 'W' + (j + 1), 'var(--l0)', !reached(2 + j), reached(2 + j)); });
+  if (!d) h += `<text x="250" y="94" text-anchor="middle" style="fill:var(--muted);font-size:11px">nobody else heard</text>`;
+  h += `<text x="14" y="176" style="fill:var(--p);font-size:10px">dashed ring = within the undo's reach</text>`;
+  return h;
+}
+
+function chart(svgId, { title, xlabel, xs, series, ymax = 1 }) {
+  const X = 44, Y = 22, W = 350, H = 150, n = xs.length - 1;
+  const xv = i => X + i * W / n, yv = v => Y + H - Math.min(v, ymax) / ymax * H;
+  let h = `<rect x="${X}" y="${Y}" width="${W}" height="${H}" style="fill:none;stroke:var(--rule)"/>`;
+  for (const v of [0, ymax / 2, ymax]) h += `<text x="${X - 6}" y="${yv(v) + 4}" text-anchor="end" style="fill:var(--muted);font-size:10px">${+v.toFixed(2)}</text>`;
+  xs.forEach((x, i) => { h += `<text x="${xv(i)}" y="${Y + H + 14}" text-anchor="middle" style="fill:var(--muted);font-size:10px">${x}</text>`; });
+  h += `<text x="${X + W / 2}" y="${Y + H + 30}" text-anchor="middle" style="fill:var(--muted);font-size:10.5px">${xlabel}</text>`;
+  h += `<text x="${X}" y="${Y - 8}" style="fill:var(--muted);font-size:10px">${title}</text>`;
+  series.forEach((s, si) => {
+    const pts = s.ys.map((v, i) => [xv(i), yv(v)]);
+    if (s.line !== false) h += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" style="fill:none;stroke:${s.col};stroke-width:2${s.dash ? ';stroke-dasharray:4 3' : ''}"/>`;
+    pts.forEach((p, i) => { if (s.dots !== false) h += `<circle cx="${p[0]}" cy="${p[1]}" r="${s.hi === i ? 5 : 3}" style="fill:${s.hi === i ? 'var(--flag)' : s.col}"/>`; });
+    const lx = X + (si % 2) * 190, ly = Y + H + 50 + Math.floor(si / 2) * 16;
+    h += `<line x1="${lx}" y1="${ly}" x2="${lx + 18}" y2="${ly}" style="stroke:${s.col};stroke-width:2${s.dash ? ';stroke-dasharray:4 3' : ''}"/>
+          <text x="${lx + 24}" y="${ly + 4}" style="fill:var(--ink);font-size:10.5px">${s.name}</text>`;
+  });
+  $(svgId).innerHTML = h;
+}
+
+// ---- room 1 ----
+function r1() {
+  const d = +$('r1d').value, phi = +$('r1phi').value;
+  $('r1dOut').textContent = d; $('r1phiOut').textContent = phi + '°';
+  $('r1net').innerHTML = netSVG(d, 'star', i => i <= 1);
+  const back = witnessRun(n0, n1, d, phi, 'star', 0);
+  let m = `Before detection, the joint undo reaches P and M and reverses their meeting. <span class="big">${pc(back)}</span> of P's original fringe contrast is recoverable [interference visibility].`;
+  m += d === 0 ? ' <span class="good">An isolated marker: the undo restores the interference in subsequent readings.</span>'
+    : back < 0.01 ? ' <span class="bad">The escaped traces block P\'s unsorted fringe; this alone has not selected an outcome.</span>'
+    : ` Each of the ${d} looks keeps cos ${phi}° = ${f3(Math.cos(phi * D2R))} of it.`;
+  $('r1msg').innerHTML = m;
+}
+['r1d', 'r1phi'].forEach(id => $(id).oninput = r1);
+document.querySelectorAll('[data-r1]').forEach(b => b.onclick = () => { const [d, p] = b.dataset.r1.split(','); $('r1d').value = d; $('r1phi').value = p; r1(); });
+
+// ---- room 2: the handshake room ----
+const H = { seed: 1, step: 0, run: null };
+const hname = j => j === 0 ? 'P' : segVal('hwiring', 'w') === 'crowd' ? 'W' + j : j === 1 ? 'D' : 'W' + (j - 1);
+function hlayout(wiring, n) {
+  const pos = [];
+  for (let j = 0; j <= n; j++) {
+    if (wiring === 'two') {                                            // up to three columns (the story's four particles): drawn wide and centred
+      const k = j >> 1, cols = Math.ceil((n + 1) / 2), few = cols <= 3, st = Math.min(few ? 140 : 70, 340 / Math.max(cols - 1, 1)), x0 = few ? 210 - (cols - 1) * st / 2 : 40;
+      pos.push([x0 + k * st, j % 2 ? 165 : 65]);
+    }
+    else if (wiring === 'tree') { const lv = Math.floor(Math.log2(j + 1)), i = j + 1 - (1 << lv), w = 1 << lv; pos.push([20 + (i + 0.5) * 380 / w, 30 + lv * 52]); }
+    else { const a = -Math.PI / 2 + 2 * Math.PI * j / (n + 1); pos.push([210 + 86 * Math.cos(a), 104 + 86 * Math.sin(a)]); }
+  }
+  return pos;
+}
+function hdraw() {
+  const wiring = segVal('hwiring', 'w'), n = +$('hn').value, eps = +$('heps').value, run = H.run, pos = hlayout(wiring, n);
+  const shown = run.log.slice(0, H.step), done = run.written && H.step >= run.log.length;
+  const hold = new Uint8Array(n + 1); hold[0] = 1; const seen = new Map(); let gave = null;     // gave = [who held, who was new] when the last step was a copy
+  shown.forEach((g, i) => {
+    if (g.kind === 'copy') { if (i === shown.length - 1) gave = hold[g.a] ? [g.a, g.b] : [g.b, g.a]; hold[g.a] = hold[g.b] = 1; }
+    const key = Math.min(g.a, g.b) + ',' + Math.max(g.a, g.b), was = seen.get(key);
+    if (g.kind !== 'none' || was) seen.set(key, { kind: was?.kind === 'chance' || g.kind === 'chance' ? 'chance' : g.kind === 'none' ? was.kind : g.kind, last: i === shown.length - 1 });
+  });
+  let h = '';
+  for (const [key, v] of seen) {
+    const [a, b] = key.split(',').map(Number), [x1, y1] = pos[a], [x2, y2] = pos[b];
+    const win = done && v.last, col = win ? 'var(--ok)' : v.kind === 'copy' ? 'var(--muted)' : 'var(--p)';
+    h += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${col};stroke-width:${win ? 3.5 : v.last ? 2.5 : 1.5}${v.kind === 'chance' && !win ? ';stroke-dasharray:4 3' : ''}"/>`;
+  }
+  const r = n <= 5 ? 17 : n > 12 ? 11 : 13, fs = n <= 5 ? 12 : n > 12 ? 9 : 10.5, lcol = run.line === 0 ? 'var(--l0)' : 'var(--l1)';
+  pos.forEach((p, j) => {
+    const fill = !hold[j] ? 'var(--surface)' : done ? lcol : j === 0 ? 'var(--p)' : 'var(--m)';
+    const stroke = j === 0 ? 'var(--p)' : done && hold[j] ? lcol : 'var(--m)';
+    h += `<circle cx="${p[0]}" cy="${p[1]}" r="${r}" style="fill:${fill};stroke:${stroke};stroke-width:2"/>
+      <text x="${p[0]}" y="${p[1] + 4}" text-anchor="middle" style="fill:${hold[j] ? 'var(--surface)' : 'var(--m)'};font-size:${fs}px;font-weight:600">${hname(j)}</text>`;
+  });
+  h += `<text x="6" y="212" style="fill:var(--muted);font-size:9.5px">grey line: a copy · dashed orange: a chance · green: the write</text>
+    <text x="6" y="226" style="fill:var(--muted);font-size:9.5px">filled: holds the promise · coloured at the end by the written line</text>`;
+  $('hnet').innerHTML = h;
+  const holders = hold.reduce((a, b) => a + b, 0), chances = shown.filter(g => g.kind === 'chance').length;
+  const last = shown[shown.length - 1], firstCopy = run.log.findIndex(g => g.kind === 'copy');
+  const num = k => ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'][k] ?? String(k);
+  const lands = t => t < 0 ? 'misses' : 'lands on line ' + t;
+  let m;
+  if (!last) m = `Nothing has met yet: P has its two lines, and nobody else holds anything. Press Next meeting.`;
+  else if (last.kind === 'copy' && shown.length - 1 === firstCopy) m = `${hname(gave[0])} meets ${hname(gave[1])}: a promise. Both lines are still there; nothing is written.`;
+  else if (last.kind === 'copy') m = `${hname(gave[0])} shakes hands with ${hname(gave[1])}: a copy. ${hname(gave[1])} holds the promise too; nothing is written, and this step could still be undone.`;
+  else if (last.kind === 'none') m = `${hname(last.a)} meets ${hname(last.b)}: neither holds the promise. Nothing happens to it.`;
+  else if (done) m = `${hname(last.a)} meets ${hname(last.b)}: a chance. Two light touches. <span class="good">Both touches land on line ${run.line}: written for ${holders === 2 ? 'both' : 'all ' + num(holders)} at once.</span> It took ${chances} chance${chances === 1 ? '' : 's'}; P was ${run.atP ? '' : 'not '}in this meeting.`;
+  else m = `${hname(last.a)} meets ${hname(last.b)}: a chance. Two light touches. ` +
+    (last.ta < 0 && last.tb < 0 ? 'Both miss.' : `${hname(last.a)} ${lands(last.ta)}; ${hname(last.b)} ${lands(last.tb)}${last.ta >= 0 && last.tb >= 0 ? ': not the same line' : ''}.`) + ` Nothing written.`;
+  if (!run.written && H.step >= run.log.length && run.log.length) m += ` <span class="bad">No newcomer is left and no two holders ever met: nothing is written.</span> A lone thread is a marker; its promise stays open.`;
+  $('hmsg').innerHTML = m;
+  $('hstep').disabled = H.step >= run.log.length; $('hend').disabled = H.step >= run.log.length;
+  $('hnOut').textContent = n; $('hepsOut').textContent = eps.toFixed(2);
+}
+function hreset(newSeed) {
+  if (newSeed) H.seed++;
+  const wiring = segVal('hwiring', 'w'), n = +$('hn').value, eps = +$('heps').value;
+  H.run = handshakeRun(n0, n1, eps, wiring, n, 500 + H.seed, true); H.step = 0;
+  $('htally').textContent = `the square says line 0 wins ${f3(n0 / (n0 + n1))}; the length law would say ${f3(lengthShare(n0, n1))}\na chance writes with ${pc(settleChance(eps))} at this strength, on every table\n(press Run 20,000 to count)`;
+  hdraw();
+}
+function hcount() {
+  const wiring = segVal('hwiring', 'w'), n = +$('hn').value, eps = +$('heps').value, N = 20000;
+  const t = handshakeTally(n0, n1, eps, wiring, n, N, 90000 + 37 * n);
+  $('htally').textContent = `runs ${N}   wiring ${wiring}   ${n} besides P   strength ${eps.toFixed(2)}\n` +
+    (t.written === 0 ? `written: none of ${N}. No two holders ever met.` :
+    `written:                ${t.written} of ${N}\n` +
+    `line 0 written:         ${f3(t.share0)}\n` +
+    `the square:             ${f3(n0 / (n0 + n1))}\n` +
+    `the length law:         ${f3(lengthShare(n0, n1))}\n` +
+    `chances to the write:   ${t.meanChances.toFixed(2)}   (law π²/4ε² = ${(1 / settleChance(eps)).toFixed(2)})\n` +
+    `written at a meeting with P: ${pc(t.atP)}` + (wiring === 'ring' ? `   (closed form ${pc(ringAtP(eps, n))})` : '') + `\n` +
+    `holders at the write:   ${t.holders.toFixed(1)} of ${n + 1}`);
+}
+function hwin() {
+  const mode = segVal('hwin', 'v'), eps = +$('heps').value, m = Math.max(2, +$('hn').value), N = 20000;
+  const s = windowRun(n0, n1, mode === 'wait' ? Math.min(eps, 0.1) : eps, mode, m, N, 4242);
+  const law = mode === 'meeting' ? n0 / (n0 + n1) : mode === 'wait' ? waitLaw(n0, n1) : pooledLaw(n0, n1, eps, m);
+  $('hwintally').textContent = `${mode === 'meeting' ? 'two touches inside one meeting' : mode === 'wait' ? 'each side keeps its last touch until the other matches it' : `one touch against a busy side of ${m}, pooled`}\n` +
+    `line 0 written:   ${f3(s)}   (its own law ${f3(law)}${mode === 'wait' ? ', weak touches' : ''})\n` +
+    `the square:       ${f3(n0 / (n0 + n1))}\nthe length law:   ${f3(lengthShare(n0, n1))}\n` +
+    (mode === 'meeting' ? 'The square.' : mode === 'wait' ? 'Between the two: a waiting pick is a proposal again.' : 'The busier the side, the closer to the length law.');
+}
+seg('hwiring', () => hreset(false));
+['hn', 'heps'].forEach(id => $(id).oninput = () => hreset(false));
+$('hstep').onclick = () => { H.step++; hdraw(); };
+$('hend').onclick = () => { H.step = H.run.log.length; hdraw(); };
+$('hnew').onclick = () => hreset(true);
+$('hrun').onclick = hcount;
+seg('hwin', () => { $('hwintally').textContent = ''; });
+$('hwinrun').onclick = hwin;
+document.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { const [w, n] = b.dataset.h.split(','); segPick('hwiring', 'w', w); $('hn').value = n; hreset(false); });
+
+// ---- room 3 ----
+function r2(run) {
+  const w = +$('r2w').value, mode = segVal('r2mode', 'm'), N = n0 + n1;
+  $('r2wOut').textContent = w;
+  const pred = mode === 'vote' ? voteShare(n0, n1, w + 2) : n0 / N;
+  if (!run) { $('r2tally').textContent = `books that hold the fact: ${w + 2}\npredicted share of line 0: ${f3(pred)}\n(press run)`; $('r2msg').innerHTML = ''; return; }
+  const r = signRun(n0, n1, w, mode, TRIALS, 1234 + w);
+  $('r2tally').textContent =
+    `settlements ${TRIALS}   books ${w + 2}   mode ${mode}\n` +
+    `line 0 won:            ${f3(r.share0)}\n` +
+    `the square (cells):    ${f3(n0 / N)}\n` +
+    (mode === 'vote' ? `vote prediction:       ${f3(pred)}\ntries per settlement:  ${r.triesPer.toFixed(2)}\n` : '') +
+    (mode === 'resign' ? `links contradicting a written book: ${pc(r.contradictions)} (predicted ${pc(2 * n0 * n1 / N / N)})\n` : '') +
+    (mode === 'copy' ? `links contradicting a written book: ${pc(r.contradictions)}\n` : '');
+  $('r2msg').innerHTML = mode === 'copy' ? '<span class="good">The square, whatever the number of witnesses. Nobody contradicts anybody.</span>'
+    : mode === 'resign' ? '<span class="bad">The fact itself keeps the square, but the witnesses\' books contradict it.</span> A ledger where later entries disagree with earlier ones is no ledger.'
+    : w === 0 ? 'Two books that must agree: the square, the same as room 2\'s match.'
+    : '<span class="bad">A vote.</span> The longer line wins more and more often; the square is gone.';
+}
+$('r2w').oninput = () => r2(false);
+seg('r2mode', () => r2(false));
+$('r2run').onclick = () => r2(true);
+document.querySelectorAll('[data-r2]').forEach(b => b.onclick = () => { segPick('r2mode', 'm', b.dataset.r2); r2(true); });
+
+// ---- room 3 ----
+function r3() {
+  const w = +$('r3w').value, q = +$('r3q').value;
+  $('r3wOut').textContent = w; $('r3qOut').textContent = q.toFixed(2);
+  const counted = reachRun(q, w, TRIALS * 5, 99 + w), law = Math.pow(q, 2 + w);
+  $('r3msg').innerHTML = `The undo must reach ${2 + w} books. Counted: <span class="big">${counted.toFixed(4)}</span> of 100,000 tries undo the fact; the law q<sup>${2 + w}</sup> says ${law.toFixed(4)}.`;
+  const xs = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  chart('r3chart', { title: `chance the undo reaches every book, reach = ${q.toFixed(2)}`, xlabel: 'witnesses', xs,
+    series: [{ ys: xs.map(x => Math.pow(q, 2 + x)), col: 'var(--l1)', name: 'law q^(2 + w)', dots: false },
+             { ys: xs.map(x => reachRun(q, x, 20000, 99 + x)), col: 'var(--l0)', name: 'counted', line: false, hi: w }],
+    ymax: Math.max(0.05, q * q) });
+}
+['r3w', 'r3q'].forEach(id => $(id).oninput = r3);
+document.querySelectorAll('[data-r3]').forEach(b => b.onclick = () => { const [w, q] = b.dataset.r3.split(','); $('r3w').value = w; $('r3q').value = q; r3(); });
+
+// ---- room 4 ----
+function r4() {
+  const d = +$('r4d').value, p = +$('r4p').value, rho = +$('r4rho').value, wiring = segVal('r4wiring', 'w');
+  const phi = Math.acos(1 - p) / D2R;
+  $('r4dOut').textContent = d; $('r4pOut').textContent = p.toFixed(2); $('r4rhoOut').textContent = rho ? rho.toFixed(2) : 'none';
+  let net = netSVG(d, wiring, i => i <= 1);
+  if (rho) net += `<text x="406" y="14" text-anchor="end" style="fill:var(--p);font-size:10px">each witness reached with chance ${rho.toFixed(2)}</text>`;
+  $('r4net').innerHTML = net;
+  let m;
+  if (!rho) {
+    const counted = copiesRun(p, d, wiring, TRIALS * 5, 7 + d), law = wiring === 'star' ? Math.pow(1 - p, d) : 1 - p;
+    m = `Nobody knows the fact in <span class="big">${pc(counted)}</span> of 100,000 runs; ` +
+      (wiring === 'star' ? `the law (1 − ${p.toFixed(2)})<sup>${d}</sup> says ${pc(law)}. One factor per direct witness${p >= 0.999 ? ': a full copy, so nothing comes back past it.' : `, worth ${bitsPerWitness(phi).toFixed(2)} bit of finality each.`}`
+                         : `the law says ${pc(law)}: only the first link counts, however long the chain.`) +
+      ` In tables: a look of ${phi.toFixed(1)}° (cos = ${f3(1 - p)}) leaves ${pc(witnessRun(n0, n1, d, phi, wiring, 0))} of P's original fringe contrast recoverable before detection.`;
+  } else {
+    const avg = reachAverage(n0, n1, d, phi, wiring, rho);
+    m = `Looks of ${phi.toFixed(1)}°; the undo reaches each witness with chance ${rho.toFixed(2)}. On average <span class="big">${pc(avg)}</span> of P's original fringe contrast is recovered before detection. `;
+    m += wiring === 'star'
+      ? `The law (${rho.toFixed(2)} + ${(1 - rho).toFixed(2)} × cos ${phi.toFixed(1)}°)<sup>${d}</sup> says ${pc(crowdLaw(d, phi, rho))}: the same factor per witness, geometric. Every look is one more thing the undo must reach.`
+      : `The law (sum over the shallowest missed link) says ${pc(chainLaw(d, phi, rho))}. However long the chain, it never falls below <b>${pc(chainFloor(phi, rho))}</b>: <span class="bad">retellings add almost nothing after the first links.</span>`;
+  }
+  $('r4msg').innerHTML = m;
+  const xs = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  const series = [{ ys: xs.map(x => reachAverage(n0, n1, x, phi, 'star', rho)), col: 'var(--l0)', name: 'crowd of looks', hi: wiring === 'star' ? d : -1 },
+                  { ys: xs.map(x => reachAverage(n0, n1, x, phi, 'chain', rho)), col: 'var(--l1)', name: 'chain of retellings', hi: wiring === 'chain' ? d : -1 }];
+  if (rho) series.push({ ys: xs.map(() => chainFloor(phi, rho)), col: 'var(--muted)', name: "the chain's floor", dash: true, dots: false });
+  chart('r4chart', { title: rho ? `recovered fringe contrast, average (look ${phi.toFixed(1)}°, reach ${rho.toFixed(2)})`
+                                : `recoverable fringe contrast (look ${phi.toFixed(1)}°)`,
+    xlabel: 'witnesses', xs, series });
+}
+['r4d', 'r4p', 'r4rho'].forEach(id => $(id).oninput = r4);
+seg('r4wiring', r4);
+document.querySelectorAll('[data-r4]').forEach(b => b.onclick = () => { const [d, p, w, rho] = b.dataset.r4.split(','); $('r4d').value = d; $('r4p').value = p; $('r4rho').value = rho; segPick('r4wiring', 'w', w); r4(); });
+
+// ---- room 5 ----
+function r5() {
+  const a = +$('r5a').value, reach = segVal('r5reach', 'r');
+  $('r5aOut').textContent = a + '°';
+  const whole = wholeTableRun(n0, n1, a, reach), narrow = narrowedPrediction(n0, n1, a), diff = Math.abs(whole - narrow);
+  const names = { P: 'P only (misses M and W)', PM: 'P and M (misses W)', all: 'P, M and W' };
+  $('r5tally').textContent = `the move reaches: ${names[reach]}\nodds of line 0 after the turn\n  whole table:    ${whole.toFixed(6)}\n  narrowed table: ${narrow.toFixed(6)}\n  difference:     ${diff.toExponential(1)}`;
+  $('r5msg').innerHTML = diff < 1e-12
+    ? '<span class="good">The same, exactly.</span> Someone who misses a book cannot tell a line was ever written.'
+    : `<span class="bad">Different by ${f3(diff)}.</span> A move that reaches every book undoes the copies and sees the other line interfere: the fringe. For this move the promise was never a fact.`;
+}
+$('r5a').oninput = r5;
+seg('r5reach', r5);
+document.querySelectorAll('[data-r5]').forEach(b => b.onclick = () => { const [r, a] = b.dataset.r5.split(','); segPick('r5reach', 'r', r); $('r5a').value = a; r5(); });
+
+// ---- room 6 ----
+function r6() {
+  const a = +$('r6a').value;
+  $('r6aOut').textContent = a + '°';
+  const w = readingRun(n0, n1, a, true), wo = readingRun(n0, n1, a, false), diff = Math.abs(w - wo);
+  $('r6tally').textContent = `odds of line 0 in the reading, turn ${a}°\n  with the copy:    ${w.toFixed(6)}\n  without the copy: ${wo.toFixed(6)}\n  difference:       ${diff.toExponential(1)}`;
+  $('r6msg').innerHTML = diff < 1e-12
+    ? '<span class="good">No difference.</span> For this reading the copy is a dead letter: nothing it holds could ever be contradicted.'
+    : `<span class="bad">The copy changes this reading by ${f3(diff)}.</span> For this reading the copy is a fact.`;
+}
+$('r6a').oninput = r6;
+document.querySelectorAll('[data-r6]').forEach(b => b.onclick = () => { $('r6a').value = b.dataset.r6; r6(); });
+
+// ---- room 7 ----
+let catStep = 0;
+const CAT_STEPS = ['Nothing has met yet.', 'The atom meets the detector: a copy.', 'The detector meets the cat: a copy. Holders inside the box settle it.', 'You open the box: your first link.'];
+function r7() {
+  const c = catRun(n0, n1, catStep);
+  const P = { A: [40, 95], D: [120, 95], C: [200, 95], O: [345, 95] };
+  let h = `<rect x="12" y="40" width="222" height="110" rx="12" style="fill:var(--sunk);stroke:var(--muted);stroke-dasharray:5 3"/>
+    <text x="22" y="34" style="fill:var(--muted);font-size:10.5px">the sealed box</text>`;
+  const link = (a, b, on) => `<line x1="${P[a][0]}" y1="${P[a][1]}" x2="${P[b][0]}" y2="${P[b][1]}" style="stroke:${on ? 'var(--ink)' : 'var(--rule)'};stroke-width:${on ? 2 : 1.2}${on ? '' : ';stroke-dasharray:3 3'}"/>`;
+  h += link('A', 'D', catStep >= 1) + link('D', 'C', catStep >= 2) + link('C', 'O', catStep >= 3);
+  const node = (k, col) => `<circle cx="${P[k][0]}" cy="${P[k][1]}" r="16" style="fill:var(--surface);stroke:${col};stroke-width:2"/><text x="${P[k][0]}" y="${P[k][1] + 4}" text-anchor="middle" style="fill:${col};font-size:12px;font-weight:600">${k}</text>`;
+  h += node('A', 'var(--p)') + node('D', 'var(--m)') + node('C', 'var(--l0)') + node('O', 'var(--l1)');
+  $('r7net').innerHTML = h;
+  $('r7tally').textContent = `step ${catStep}: ${CAT_STEPS[catStep]}\nhow closely two books agree (0 = nothing shared, 1 = the same line)\n  atom · detector:   ${f3(c.AD)}\n  detector · cat:    ${f3(c.DC)}\n  cat · you:         ${f3(c.CO)}\n  atom · you:        ${f3(c.AO)}`;
+  $('r7msg').innerHTML = catStep < 2 ? 'Keep stepping.'
+    : catStep === 2 ? 'Inside the box the fact is complete: the cat agrees with the detector. <span class="bad">Your book shares nothing with the cat.</span> For you, the box is still a promise.'
+    : '<span class="good">Your book now agrees with the cat, and with the atom.</span> Nothing was decided just now; the fact was delivered.';
+  $('r7next').disabled = catStep >= 3;
+}
+$('r7next').onclick = () => { catStep++; r7(); };
+$('r7reset').onclick = () => { catStep = 0; r7(); };
+
+function renderAll() {
+  const N = n0 + n1;
+  $('presetInfo').textContent = n0 === n1 ? 'equal lengths' : `the square says ${n0}/${N} = ${f3(n0 / N)} for line 0`;
+  r1(); hreset(false); $('hwintally').textContent = ''; r2(false); r3(); r4(); r5(); r6(); r7();
+}
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Meeting Game</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#f6f5f1; --surface:#ffffff; --sunk:#efece5;
+    --ink:#23201c; --muted:#77736c; --rule:#e0dbd2;
+    --p:#c07016; --p-soft:#f6e6d1; --m:#6b4fbb; --m-soft:#e6e0f5;
+    --l0:#12806f; --l0-soft:#d9ece7; --l1:#2d64a8; --l1-soft:#dde7f4;
+    --flag:#b83a2b; --ok:#2f7d32;
+    --shadow:0 1px 2px rgba(35,32,28,.06), 0 8px 24px rgba(35,32,28,.05);
+    --serif:"IBM Plex Serif",Georgia,serif;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#181715; --surface:#221f1c; --sunk:#1e1c1a;
+      --ink:#ece6dc; --muted:#98918a; --rule:#35322d;
+      --p:#e09a45; --p-soft:#3a2c19; --m:#a48ce8; --m-soft:#2b2440;
+      --l0:#46bda9; --l0-soft:#153029; --l1:#72a3e3; --l1-soft:#18263a;
+      --flag:#e0715f; --ok:#6cc070;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#181715; --surface:#221f1c; --sunk:#1e1c1a;
+    --ink:#ece6dc; --muted:#98918a; --rule:#35322d;
+    --p:#e09a45; --p-soft:#3a2c19; --m:#a48ce8; --m-soft:#2b2440;
+    --l0:#46bda9; --l0-soft:#153029; --l1:#72a3e3; --l1-soft:#18263a;
+    --flag:#e0715f; --ok:#6cc070;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;margin:0}
+  .wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:32px 56px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:.2em 0 .15em;letter-spacing:-.01em}
+  h2{font-family:var(--serif);font-weight:600;font-size:21px;margin:0;line-height:1.2}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+  .lede{color:var(--muted);max-width:76ch;margin:0 0 18px}
+  .lede b{color:var(--ink);font-weight:500}
+  button{font:500 14px/1 var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--rule);
+         border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .12s}
+  button:hover:not(:disabled){background:var(--sunk)}
+  button:disabled{opacity:.38;cursor:not-allowed}
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  button.on{border-color:var(--ink);font-weight:600}
+  select{font:500 14px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:7px 8px}
+  .bar{position:sticky;top:0;z-index:5;background:var(--ground);border-bottom:1px solid var(--rule);
+       display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 0;margin-bottom:8px}
+  .bar .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .bar .where{font-family:var(--mono);font-size:12.5px}
+
+  .score{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:14px 0 6px}
+  .score div{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:13.5px}
+  .score b{display:block;font-size:14.5px;margin-bottom:2px}
+  .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+        border:1.5px solid currentColor;border-radius:12px;padding:1px 8px;margin:2px 0 4px;white-space:nowrap}
+  .chip.der{color:var(--ok)} .chip.mea{color:var(--l1)} .chip.opn{color:var(--p)} .chip.no{color:var(--flag)}
+
+  .panel{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:20px;margin-top:26px}
+  .phead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:12px}
+  .phead .n{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px}
+  @media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+  .say{font-size:14.5px;max-width:60ch}
+  .say p{margin:0 0 .7em}
+  .say .rule{border-left:3px solid var(--ink);padding-left:10px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .msg{font-size:14px;background:var(--sunk);border-radius:8px;padding:10px 12px;min-height:3em}
+  .msg:empty{display:none}
+  .msg .good{color:var(--ok);font-weight:600} .msg .bad{color:var(--flag);font-weight:600}
+  .viz{display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:0}
+  .tcap{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .tbl{display:grid;gap:4px;align-items:center;justify-items:center}
+  .axl{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;text-align:center}
+  .axl.p{color:var(--p)} .axl.m{color:var(--m)}
+  .zk{color:var(--muted);font-size:10px}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .cell svg{display:block}
+  .cell .num{font-family:var(--mono);font-size:10px;white-space:nowrap;color:var(--muted)}
+  .cell.hi svg{outline:2px solid var(--flag);outline-offset:-1px;border-radius:50%}
+  .cellrow{display:flex;flex-wrap:wrap;gap:10px}
+  .grp{display:flex;flex-direction:column;gap:3px;border:1px dashed var(--rule);border-radius:8px;padding:5px 7px}
+  .grp .in{display:flex;gap:3px}
+  .jt{grid-template-columns:auto auto auto;justify-items:stretch;row-gap:3px;column-gap:8px}
+  .jt .pcell{align-self:stretch;display:flex;align-items:center;justify-content:center;border:1.5px solid;border-radius:8px;
+             font-family:var(--mono);font-size:12px;color:var(--p);padding:0 10px}
+  .jt .mcell{display:flex;align-items:center;font-family:var(--mono);font-size:12px;color:var(--m);white-space:nowrap}
+  .jt .arw{justify-self:center}
+  .ovg{display:grid;gap:3px;align-items:center;justify-items:center}
+  .ov{width:30px;height:22px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;border-radius:4px}
+  .ov.one{background:var(--m);color:var(--surface)} .ov.zero{background:var(--sunk);color:var(--muted)}
+  .viz svg.fig{max-width:100%;height:auto}
+  .ctl{display:grid;grid-template-columns:auto minmax(120px,1fr) auto;gap:6px 10px;align-items:center;margin:4px 0;max-width:460px}
+  .ctl label{min-width:9em;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .ctl input[type=range]{width:100%;accent-color:var(--ink);margin:0}
+  .ctl .out{font-family:var(--mono);font-size:12.5px;min-width:3.5em;text-align:right}
+  .seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+  .seg button{border:0;border-radius:0;padding:7px 11px;font-size:13px}
+  .seg button.on{background:var(--ink);color:var(--surface)}
+  .tally{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunk);border-radius:8px;padding:10px 12px;white-space:pre-wrap;width:100%}
+  .big{font-family:var(--mono);font-size:22px;font-weight:600}
+  svg text{font-family:var(--mono)}
+  .bars{width:100%;max-width:520px}
+  .notclaimed{font-size:13px;color:var(--muted);max-width:84ch;margin-top:26px;padding-top:12px;border-top:1px solid var(--rule)}
+  .open{border:1.5px dashed var(--p);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px;background:var(--p-soft)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Quest for Entropy · bench for #19 · kitchen draft</p>
+  <h1>The Meeting Game</h1>
+  <p class="lede">The rules of the game: <b>everything is a particle, every particle is a table, and the only move is a
+  meeting</b>, where two tables join into one. No measurement move, no collapse, no settlement rule. Can a settlement grow
+  out of meetings alone, and can its parts grow too: two holders whose touches land on the same line?
+  Four rooms, one question each.</p>
+
+  <div class="score">
+    <div><b>1 · The odds</b><span class="chip der">derived</span><br>Equal lines get equal odds because the counterparty can undo the swap; a closer look at M splits the lines into equal cells; the square is the cell count. Rooms 1 and 2.</div>
+    <div><b>2 · Two darts, one match</b><span class="chip opn">result forced · touch installed</span><br>Two touches that land on the same line land exactly on the cells. No proposal, no refusal: a miss leaves nothing. The touch itself is installed. Room 3.</div>
+    <div><b>3 · The fact</b><span class="chip der">proved on the toy's code</span><br>Meetings with witnesses put the other line out of reach. Direct looks multiply; copies of copies do not. Room 4.</div>
+    <div><b>4 · Which line</b><span class="chip no">not emerged</span><br>Which cell the books land on is not produced by any meeting. It stays the hidden variable.</div>
+  </div>
+
+  <div class="bar">
+    <span class="lbl">The particle P, two lines, lengths</span>
+    <select id="preset"></select>
+    <span class="where" id="presetInfo"></span>
+  </div>
+
+  <!-- ROOM 1 ------------------------------------------------------------------------------------------------ -->
+  <section class="panel" id="room1">
+    <div class="phead"><span class="n">room 1</span><h2>A meeting, and the swap nobody notices</h2><span class="chip der">derived</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div id="r1table"></div>
+        <div class="btns">
+          <button id="r1meet">P meets M</button>
+          <button id="r1swap">P swaps its two lines</button>
+          <button id="r1undo">M swaps its labels back</button>
+          <button id="r1turn">M turns its arrows</button>
+          <button id="r1reset">Reset</button>
+        </div>
+        <div class="msg" id="r1msg"></div>
+      </div>
+      <div class="say">
+        <p>A lone table has two lines, and nothing in the rules says how likely each one is. The game has no dice.</p>
+        <p>Let P meet a detector particle M. Now the joint table has two lines, P's 0 with M's 0 and P's 1 with M's 1:
+        a <b>promise</b>. Nothing is written.</p>
+        <p>Try this. P secretly swaps its two lines. Can M, touching only its own table, put everything back? M has two
+        moves. It can <b>swap its own labels</b>, which puts every arrow back in its old cell. And it can <b>turn</b> the
+        arrows: each cell has a different M label, so M has a handle on each arrow and can turn each one by its own angle.
+        Turning only rotates; it never stretches.</p>
+        <p class="rule">M can undo P's swap <b>exactly when the two lines have the same length</b>. Then the swap changed nothing
+        that P's side could ever notice, so the two lines must have the same odds. That is a theorem, not a rule we put in.
+        A wrong direction (a phase) is repaired by M's turn. A wrong length is not: nothing on M's side can stretch.</p>
+        <p>Before the meeting there is nobody to undo anything. A lone table gets only what symmetry forces: equal odds when nothing
+        tells its lines apart, and never odds from its lengths. <b>The lengths become odds once a counterparty holds the other side.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 2 ------------------------------------------------------------------------------------------------ -->
+  <section class="panel" id="room2">
+    <div class="phead"><span class="n">room 2</span><h2>Zoom in on M: the lines split into equal cells</h2><span class="chip der">derived</span></div>
+    <div class="cols">
+      <div class="viz">
+        <div id="r2before"></div>
+        <div class="btns">
+          <button id="r2split">Zoom in on M</button>
+          <button id="r2swap" disabled>Swap two cells, M undoes it</button>
+          <button id="r2reset">Reset</button>
+        </div>
+        <div id="r2cells"></div>
+        <div class="msg" id="r2msg"></div>
+        <div id="r2perp"></div>
+      </div>
+      <div class="say">
+        <p>Unequal lines fail room 1's test. So <b>zoom in on M</b>. M has more inside than its two labels show. Up close,
+        its label "0" is really several finer labels, and so is "1", and we can read them so that <b>every cell has the same
+        length</b>. Nothing is added and nothing new meets P: this is only a closer description of M's side. One part of
+        M keeps a note of each fine label, so every cell has a counterparty of its own, inside M.</p>
+        <p>Now any two cells pass room 1's test, even two cells from different lines. All cells are interchangeable,
+        so all cells have the same odds.</p>
+        <p>Read the table as in room 1: P down the side, M across the top, an arrow wherever the two match. P's side does not
+        change: P still has two lines. Only M's side gets finer, because up close M tells its cells apart: "0" is 0a, 0b, 0c. In brackets are Zurek's names: s for P's lines, ε for M's labels, c for M's fine labels, which he
+        calls a counter, a part of M. He counts from 1.</p>
+        <p>Different labels mean <b>perpendicular</b> cells. M can tell 0a from 0b for certain, so looking at one gives
+        no trace of the other: their overlap is 0, and zero overlap is what a right angle means. The grid under the
+        cells shows the overlaps.</p>
+        <p class="rule">Two separate steps; keep them apart.<br>
+        <b>1. Geometry, only arithmetic.</b> Perpendicular pieces add like the two short sides of a right triangle: their
+        <i>squared</i> lengths add. Line 0 is n cells, each of length 1/√N, so its length squared is n × 1/N = n/N. The
+        spiral under the cells draws it, one right angle per new cell.<br>
+        <b>2. Odds, the assumption.</b> Every cell has the same odds, so a line that owns n of the N cells has odds n/N.<br>
+        Put the two side by side and the odds equal the line's length squared. Nobody squared a length to get odds: the
+        close look at M cut the promise into equal pieces, and the square is simply what the geometry says about n perpendicular
+        pieces.</p>
+        <p>What is still assumed: odds belong to the side that holds them, do not care about names, and add over cells.</p>
+        <p>From those assumptions, cells over the total is a machine-checked proof (Lean 4, Mathlib) for whole-number cell
+        counts. Other lengths need continuity, which no certificate covers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 3 ------------------------------------------------------------------------------------------------ -->
+  <section class="panel" id="room3">
+    <div class="phead"><span class="n">room 3</span><h2>Two darts, one match</h2><span class="chip opn">result forced · process installed</span></div>
+    <div class="cols">
+      <div class="viz">
+        <svg id="r3svg" viewBox="0 0 360 360" width="100%" style="max-width:380px"></svg>
+        <div class="btns">
+          <button id="r3one">One dart</button>
+          <button id="r3hund">100 darts</button>
+          <button id="r3many">2000 darts</button>
+          <button id="r3reset">Reset</button>
+        </div>
+        <div class="tally" id="r3tally"></div>
+      </div>
+      <div class="say">
+        <p>In #17 we told this as a loop: pick, sign, refuse, pick again. Here is the version with no loop. When two holders
+        meet, each makes one light touch: one event touches one line. Usually it lands nowhere. Sometimes it lands on a line, in proportion to that line's
+        length. The darts below are the meetings where both touches landed somewhere.</p>
+        <p>Two touches are one dart on the square: P's across, M's up. The meeting only ever wrote the two <b>matched</b>
+        blocks on the diagonal. A dart on the diagonal writes that line for every holder. A dart off it is a miss: nothing is
+        written, and nothing is left behind. The next meeting of two holders throws again.</p>
+        <p class="rule">The written share is an <b>area</b>: length times length. It lands on room 2's cell count exactly. So
+        two touches inside one meeting are one honest way for two sides, each seeing only its own lengths, to draw one of the
+        equal cells.</p>
+        <p>A miss is exact, not a figure of speech. In the lines the meeting wrote, an off-diagonal pair has no cell at all,
+        so nothing can ever be written there. And the number of misses before the write is the same on every table, so
+        nobody learns anything by counting them.</p>
+        <p><b>Each side throws its own dart. What they share is not a dart but the cells that are missing.</b> How much they
+        share is one number, made only by a meeting and spent by the settlement.</p>
+        <div class="open"><b>What is installed, said plainly.</b> Rooms 1 and 2 force the <i>result</i>. The <i>process</i> that
+        draws a cell, each side touching by length, is put in by hand: every write has two sides. We do know what each needle
+        has to be: a race in which a line locks at a rate set by its length, with no memory. That is the only race that gives
+        one side the plain length share. A race with memory can pass near the square but never lands on it; and if one side
+        did land on it, two sides agreeing would carry it past, to the fourth power. So the square is made where the two sides agree, and nowhere else
+        we have found. Why the rate is the length comes down to one premise: the rate must not depend on how the line is
+        labelled (checked), and it must touch the line, not its cells (told to the toy). The two touches must fall inside
+        one meeting: a pick that waits for the other side to match is a proposal again and misses the square. #17's loop
+        had a worse flaw: its count of refusals depended on the far party's turn, about 0.12 bit per settlement on the toy.
+        The touch has no such count; its misses are the same on every table. Where the touch comes from (a hidden clock in
+        each particle) lies below the waterline; only its output is in the world.</div>
+        <p style="margin-top:12px"><b>How many books must agree?</b> Two gives the cells. One gives the length law (no counterparty,
+        room 1 says a lone table gets no odds from its lengths). Three or more is a vote, and the longer line wins everything: the telephone game.</p>
+        <svg id="r3bars" class="bars" viewBox="0 0 520 200"></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROOM 4 ------------------------------------------------------------------------------------------------ -->
+  <section class="panel" id="room4">
+    <div class="phead"><span class="n">room 4</span><h2>Witnesses: when the promise can no longer be undone</h2><span class="chip der">proved on the toy's code</span></div>
+    <div class="cols">
+      <div class="viz">
+        <svg id="r4net" viewBox="0 0 420 180" width="100%" style="max-width:440px"></svg>
+        <div class="ctl"><label for="r4d">witnesses</label><input id="r4d" type="range" min="0" max="6" value="3"><span class="out" id="r4dOut"></span></div>
+        <div class="ctl"><label for="r4phi">look</label><input id="r4phi" type="range" min="0" max="90" step="5" value="40"><span class="out" id="r4phiOut"></span></div>
+        <div class="ctl"><label for="r4k">undo reaches</label><input id="r4k" type="range" min="0" max="6" value="0"><span class="out" id="r4kOut"></span></div>
+        <div class="btns"><span class="seg" id="r4wiring"><button data-w="star" class="on">crowd: each looks at M</button><button data-w="chain">chain: each tells the next</button></span></div>
+        <div class="msg" id="r4msg"></div>
+        <svg id="r4chart" viewBox="0 0 420 250" width="100%" style="max-width:440px"></svg>
+      </div>
+      <div class="say">
+        <p>P has met M: a promise. Now other particles meet M. Each such meeting is a <b>look</b>: the witness turns a little
+        (the "look" dial) if M's line is 1. At 90° it is a perfect copy; at 0° it saw nothing.</p>
+        <p>Then somebody tries to undo everything: every meeting it can reach, last one first. It holds P and M, and the first
+        few witnesses (the "undo reaches" dial). Afterwards we ask P's table: how much of the other line came back?</p>
+        <p class="rule"><b>A crowd of direct looks:</b> each direct witness left out of reach costs a factor cos(look), and
+        the factors multiply. <b>A chain</b>, where each witness only hears from the one before, never gets past its first link.
+        Evidence adds up; hearsay doesn't.</p>
+        <p>Both laws, and the chain's level line on the chart, are a machine-checked theorem (Lean 4, Mathlib) for every
+        number of witnesses. One honest clause: it is proved for a line-by-line copy of the toy's code in Lean, which
+        reproduces every number the toy ever stored; for looks between 0° and 90°.</p>
+        <p>This is the answer to #18's question. The detector's first touch is the same meeting as the marker's. The detector
+        then talks to a crowd at once, and the crowd is out of reach. The marker was left alone.</p>
+        <p>Nothing here picks the line. The witnesses only make it permanent.</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="notclaimed"><b>What this bench does not claim.</b> Every number here is standard quantum mechanics on a handful of
+  qubits: room 1 and 2 are Zurek's envariance argument (2003, 2005) in the game's words, room 4 is decoherence and the
+  quantum eraser, close to Zurek's quantum Darwinism (a fact becomes objective once many pieces of the surroundings hold
+  copies of it), the chart in room 3 is arithmetic. What the game adds is the picture: one move, the meeting, and
+  settlement read as what the meetings leave behind. It does not produce which line comes true; that stays hidden. The
+  line phase is fixed at 60° for line 1; any phase gives the same results.</p>
+</div>
+
+<script id="engine">
+// ---- complex helpers ---------------------------------------------------------------------------------------
+const cabs = z => Math.hypot(z[0], z[1]);
+const carg = z => Math.atan2(z[1], z[0]);
+const polar = (r, a) => [r * Math.cos(a), r * Math.sin(a)];
+const PHASE1 = Math.PI / 3;
+// Zurek's names in brackets (PRA 71, 052105, 2005): s_k for P's lines, ε_k for M's labels, c_j for M's fine labels; he counts from 1
+const zk = (x, i) => ` <span class="zk">[${x}<sub>${i}</sub>]</span>`;
+const fine = c => `${c.line}${'abcdefghij'[c.k]}`;
+
+function lineAmps(n0, n1) {                      // normalised contract amplitudes, line 1 carries a phase
+  const N = n0 + n1;
+  return [polar(Math.sqrt(n0 / N), 0), polar(Math.sqrt(n1 / N), PHASE1)];
+}
+
+// M's best undo of P's swap, touching only M: swap M's labels back and fix both phases.
+// Exact iff |z0| = |z1| (Theorem 1); residual = sqrt2 * ||z0| - |z1||.
+function undoBySwapAndPhase(z0, z1) {
+  const a00 = polar(cabs(z1), carg(z0)), a11 = polar(cabs(z0), carg(z1));
+  const r = Math.hypot(a00[0] - z0[0], a00[1] - z0[1], a11[0] - z1[0], a11[1] - z1[1]);
+  return { a00, a11, residual: r };
+}
+
+// ---- a small state vector ------------------------------------------------------------------------------------
+function newState(n) { const d = 1 << n; return { n, re: new Float64Array(d), im: new Float64Array(d) }; }
+function cx(s, c, t) {
+  const d = 1 << s.n;
+  for (let i = 0; i < d; i++) if ((i >> c & 1) && !(i >> t & 1)) {
+    const j = i | (1 << t);
+    let x = s.re[i]; s.re[i] = s.re[j]; s.re[j] = x;
+    x = s.im[i]; s.im[i] = s.im[j]; s.im[j] = x;
+  }
+}
+function cry(s, c, t, th) {                      // if control is 1, turn the target by th/2
+  const d = 1 << s.n, co = Math.cos(th / 2), si = Math.sin(th / 2);
+  for (let i = 0; i < d; i++) if ((i >> c & 1) && !(i >> t & 1)) {
+    const j = i | (1 << t), ar = s.re[i], ai = s.im[i], br = s.re[j], bi = s.im[j];
+    s.re[i] = co * ar - si * br; s.im[i] = co * ai - si * bi;
+    s.re[j] = si * ar + co * br; s.im[j] = si * ai + co * bi;
+  }
+}
+function coherence(s, q) {                       // |sum over the rest of psi(q=0) conj psi(q=1)|
+  const d = 1 << s.n; let r = 0, m = 0;
+  for (let i = 0; i < d; i++) if (!(i >> q & 1)) {
+    const j = i | (1 << q);
+    r += s.re[i] * s.re[j] + s.im[i] * s.im[j];
+    m += s.im[i] * s.re[j] - s.re[i] * s.im[j];
+  }
+  return Math.hypot(r, m);
+}
+
+// P = qubit 0, M = qubit 1, witness j = qubit 1 + j. Meetings in order; the undo reverses every meeting
+// whose two particles are both within reach, last first. Returns the share of the other line that came back.
+function witnessRun(n0, n1, d, phiDeg, wiring, k) {
+  const s = newState(2 + d), [z0, z1] = lineAmps(n0, n1);
+  s.re[0] = z0[0]; s.im[0] = z0[1]; s.re[1] = z1[0]; s.im[1] = z1[1];
+  const th = 2 * phiDeg * Math.PI / 180, gates = [['cx', 0, 1]];
+  for (let j = 1; j <= d; j++) gates.push(['cry', wiring === 'star' || j === 1 ? 1 : j, 1 + j, th]);
+  for (const g of gates) g[0] === 'cx' ? cx(s, g[1], g[2]) : cry(s, g[1], g[2], g[3]);
+  const reach = q => q <= 1 + k;
+  for (const g of gates.slice().reverse())
+    if (reach(g[1]) && reach(g[2])) g[0] === 'cx' ? cx(s, g[1], g[2]) : cry(s, g[1], g[2], -g[3]);
+  return coherence(s, 0) / (cabs(z0) * cabs(z1));
+}
+
+// k books each draw by length; accepted only if all agree. Share of line 0 among the accepted.
+const booksPredicted = (n0, n1, k) => { const a = Math.pow(n0, k / 2), b = Math.pow(n1, k / 2); return a / (a + b); };
+</script>
+
+<script>
+const PRESETS = [[1, 1], [2, 1], [3, 1], [3, 2], [4, 1], [5, 3]];
+let n0 = 3, n1 = 1;
+const $ = id => document.getElementById(id);
+const f3 = x => x.toFixed(3);
+const sq = n => n === 1 ? '1' : '√' + n;
+
+function arrow(z, col, size = 40, scale = 1) {
+  const c = size / 2, r = size / 2 - 3, L = r * cabs(z) / scale;
+  let s = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${c}" cy="${c}" r="${r}" style="fill:none;stroke:var(--rule);stroke-width:1.2"/>`;
+  if (L > 0.8) {
+    const a = carg(z), x = c + L * Math.cos(a), y = c - L * Math.sin(a), h = Math.min(5, L * .45);
+    const a1 = a + Math.PI * .82, a2 = a - Math.PI * .82;
+    s += `<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" style="stroke:${col};stroke-width:2.2;stroke-linecap:round"/>`;
+    s += `<path d="M${x},${y} L${x + h * Math.cos(a1)},${y - h * Math.sin(a1)} L${x + h * Math.cos(a2)},${y - h * Math.sin(a2)} Z" style="fill:${col}"/>`;
+  } else s += `<circle cx="${c}" cy="${c}" r="1.6" style="fill:var(--muted)"/>`;
+  return s + '</svg>';
+}
+const LC = ['var(--l0)', 'var(--l1)'];
+const cellHTML = (z, col, num, hi) => `<div class="cell${hi ? ' hi' : ''}">${arrow(z, col)}<span class="num">${num}</span></div>`;
+const ZERO = [0, 0];
+
+// ---- preset bar --------------------------------------------------------------------------------------------------
+PRESETS.forEach(([a, b], i) => {
+  const o = document.createElement('option'); o.value = i;
+  o.textContent = `${sq(a)} : ${sq(b)}`; if (a === 3 && b === 1) o.selected = true; $('preset').appendChild(o);
+});
+$('preset').onchange = e => { [n0, n1] = PRESETS[+e.target.value]; resetAll(); };
+function presetInfo() {
+  const N = n0 + n1;
+  $('presetInfo').textContent = n0 === n1 ? 'equal lengths' : `the square says ${n0}/${N} = ${f3(n0 / N)} for line 0`;
+}
+
+// ---- room 1 -----------------------------------------------------------------------------------------------------
+const r1 = { met: false, swapped: false, relabel: false, undone: false };
+function r1render() {
+  const [z0, z1] = lineAmps(n0, n1);
+  let html, msg;
+  if (!r1.met) {
+    const t = r1.swapped ? [z1, z0] : [z0, z1], col = r1.swapped ? [LC[1], LC[0]] : LC;
+    html = `<div class="tcap">P's table, alone</div><div class="tbl" style="grid-template-columns:auto auto auto">
+      <span></span><span class="axl p">P = 0${zk('s', 1)}</span><span class="axl p">P = 1${zk('s', 2)}</span>
+      <span class="axl">line</span>${cellHTML(t[0], col[0], f3(cabs(t[0])))}${cellHTML(t[1], col[1], f3(cabs(t[1])))}</div>`;
+    msg = r1.swapped
+      ? (n0 === n1 ? 'P swapped its lines. Nobody else exists to put anything back; equal lengths get equal odds by symmetry alone.'
+                   : '<span class="bad">A different table now.</span> Nobody else exists to undo it. A lone table gets no odds from its lengths.')
+      : 'P alone: one table, two lines. Let it meet M, or try the swap first.';
+  } else {
+    let T = [[z0, ZERO], [ZERO, z1]], C = [[LC[0], null], [null, LC[1]]];
+    if (r1.swapped && !r1.relabel) { T = [[ZERO, z1], [z0, ZERO]]; C = [[null, LC[1]], [LC[0], null]]; }
+    if (r1.relabel && !r1.undone) { T = [[z1, ZERO], [ZERO, z0]]; C = [[LC[1], null], [null, LC[0]]]; }
+    let res = null;
+    if (r1.undone) { const u = undoBySwapAndPhase(z0, z1); T = [[u.a00, ZERO], [ZERO, u.a11]]; C = [[LC[1], null], [null, LC[0]]]; res = u.residual; }
+    const c = (p, m) => cellHTML(T[p][m], C[p][m] || 'var(--muted)', cabs(T[p][m]) > 1e-12 ? f3(cabs(T[p][m])) : '·');
+    html = `<div class="tcap">the joint table of P and M</div><div class="tbl" style="grid-template-columns:auto auto auto">
+      <span></span><span class="axl m">M = 0${zk('ε', 1)}</span><span class="axl m">M = 1${zk('ε', 2)}</span>
+      <span class="axl p">P = 0${zk('s', 1)}</span>${c(0, 0)}${c(0, 1)}<span class="axl p">P = 1${zk('s', 2)}</span>${c(1, 0)}${c(1, 1)}</div>`;
+    if (r1.undone) msg = res < 1e-12
+      ? `<span class="good">Undone. Distance from the original table: ${res.toExponential(1)}.</span> M alone put it back, so P's swap was invisible: the two lines must have the same odds.`
+      : `<span class="bad">Not undone. Distance from the original table: ${f3(res)}.</span> The lengths ${f3(cabs(z0))} and ${f3(cabs(z1))} ended up on the wrong lines, and nothing on M's side can move length between P's lines. Unequal lines are not interchangeable. Go to room 2.`;
+    else if (r1.relabel) msg = n0 === n1
+      ? 'M swapped its labels back. Every cell has the right <b>length</b> (' + f3(cabs(z0)) + '), but the arrows point the wrong way: that is only a phase, and M can turn it. Next: M turns its arrows.'
+      : '<span class="bad">M swapped its labels back.</span> The lengths now sit in the wrong cells (' + f3(cabs(z1)) + ' where ' + f3(cabs(z0)) + ' was) and the arrows point the wrong way too. M can turn arrows, but it cannot stretch them. Try turning.';
+    else if (r1.swapped) msg = 'P swapped its lines: the arrows now sit off the diagonal. M may now act on its own side only. First move: M swaps its own labels back.';
+    else msg = 'A promise: two lines, P and M matched in each. Nothing is written. Now let P swap its lines.';
+  }
+  $('r1table').innerHTML = html; $('r1msg').innerHTML = msg;
+  $('r1meet').disabled = r1.met; $('r1undo').disabled = !(r1.met && r1.swapped && !r1.relabel);
+  $('r1turn').disabled = !(r1.relabel && !r1.undone);
+  $('r1swap').disabled = r1.swapped;
+}
+$('r1meet').onclick = () => { r1.met = true; r1.swapped = false; r1.relabel = false; r1.undone = false; r1render(); };
+$('r1swap').onclick = () => { r1.swapped = true; r1render(); };
+$('r1undo').onclick = () => { r1.relabel = true; r1render(); };
+$('r1turn').onclick = () => { r1.undone = true; r1render(); };
+$('r1reset').onclick = () => { Object.assign(r1, { met: false, swapped: false, relabel: false, undone: false }); r1render(); };
+
+// ---- room 2 -----------------------------------------------------------------------------------------------------
+const r2 = { split: false, hi: null, swaps: 0, worst: 0 };
+// joint table: one row per pair (P's line, M's label); P's cell spans the rows of its line
+// same P-by-M grid as room 1: P down the side (2 rows, never more), M's labels across the top
+function jointTable(cap, groups, foot) {
+  const cols = groups.flatMap(g => g.cells.map(c => ({ line: g.line, ...c })));
+  let h = `<div class="tcap">${cap}</div><div class="tbl" style="grid-template-columns:repeat(${cols.length + 1},auto)"><span></span>`
+    + cols.map(c => `<span class="axl m">M = ${c.m}</span>`).join('');
+  [0, 1].forEach(p => {
+    h += `<span class="axl p">P = ${p}${zk('s', p + 1)}</span>` + cols.map(c => c.line === p
+      ? cellHTML(c.z, LC[p], f3(cabs(c.z)), c.hi) : cellHTML(ZERO, 'var(--muted)', '·')).join('');
+  });
+  return h + `</div><div class="tcap">${foot}</div>`;
+}
+
+// the square-root spiral: every new cell is added at a right angle to the running arrow
+function spiralSVG(n) {
+  const pts = [[0, 0], [1, 0]];
+  for (let k = 1; k < n; k++) {
+    const [x, y] = pts[k], r = Math.hypot(x, y);
+    pts.push([x - y / r, y + x / r]);
+  }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const W = 320, H = 230, pad = 28, s = Math.min((W - 2 * pad) / Math.max(x1 - x0, .01), (H - 2 * pad) / Math.max(y1 - y0, .01), 80);
+  const X = p => pad + (p[0] - x0) * s + (W - 2 * pad - (x1 - x0) * s) / 2, Y = p => H - pad - (p[1] - y0) * s - (H - 2 * pad - (y1 - y0) * s) / 2;
+  let h = `<svg class="fig" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
+  for (let k = 1; k <= n; k++) {
+    const p = pts[k];
+    h += `<line x1="${X(pts[0])}" y1="${Y(pts[0])}" x2="${X(p)}" y2="${Y(p)}" style="stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3"/>`;
+    if (k < n) {                                       // the right angle between the running arrow and the next cell
+      const r = Math.hypot(p[0], p[1]), u = [p[0] / r, p[1] / r], v = [-u[1], u[0]], a = .16;
+      const q = (du, dv) => `${X([p[0] - a * u[0] * du + a * v[0] * dv, p[1] - a * u[1] * du + a * v[1] * dv])},${Y([p[0] - a * u[0] * du + a * v[0] * dv, p[1] - a * u[1] * du + a * v[1] * dv])}`;
+      h += `<path d="M${q(1, 0)} L${q(1, 1)} L${q(0, 1)}" style="fill:none;stroke:var(--muted);stroke-width:1"/>`;
+    }
+  }
+  for (let k = 1; k <= n; k++)
+    h += `<line x1="${X(pts[k - 1])}" y1="${Y(pts[k - 1])}" x2="${X(pts[k])}" y2="${Y(pts[k])}" style="stroke:var(--l0);stroke-width:3.5;stroke-linecap:round"/>`;
+  for (let k = 1; k <= n; k++)
+    h += `<text x="${X(pts[k]) + 6}" y="${Y(pts[k]) - 5}" style="fill:var(--ink);font-family:var(--mono);font-size:10.5px">${k} cell${k > 1 ? 's' : ''}: length² ${k}</text>`;
+  return h + '</svg>';
+}
+
+function r2perp(cells, N) {
+  const lab = cells.map(fine);
+  let g = `<div class="ovg" style="grid-template-columns:repeat(${N + 1},auto)"><span></span>` + lab.map(l => `<span class="axl m">${l}</span>`).join('');
+  lab.forEach((a, i) => {
+    g += `<span class="axl m">${a}</span>` + lab.map((_, j) => `<span class="ov ${i === j ? 'one' : 'zero'}">${i === j ? 1 : 0}</span>`).join('');
+  });
+  g += '</div>';
+  const one = 1 / N;
+  return `<div class="tcap">why the cells are perpendicular: how much M's labels overlap</div>${g}
+    <div class="tcap" style="max-width:46ch;white-space:normal">A label overlaps fully with itself (1) and not at all with another (0). Zero overlap is a right angle.</div>
+    <div class="tcap" style="margin-top:6px">the math: line 0, cell by cell (in units of one cell)</div>${spiralSVG(n0)}
+    <div class="tcap" style="max-width:52ch;white-space:normal">Each new cell (thick) is added at a right angle to the running arrow (dashed). Pythagoras: the running length squared grows by exactly 1 per cell, so ${n0} cell${n0 > 1 ? 's' : ''} give a length² of ${n0}, a length of √${n0} = ${f3(Math.sqrt(n0))} cells.
+    In real size one cell is 1/√${N} = ${f3(Math.sqrt(one))} long, its square is 1/${N} = ${f3(one)}, and line 0's square is ${n0} × 1/${N} = ${f3(n0 * one)}.</div>`;
+}
+
+function r2render() {
+  const [z0, z1] = lineAmps(n0, n1), N = n0 + n1;
+  $('r2before').innerHTML = jointTable('before: the joint table of P and M, two arrows of unequal length',
+    [{ line: 0, cells: [{ m: '0' + zk('ε', 1), z: z0 }] }, { line: 1, cells: [{ m: '1' + zk('ε', 2), z: z1 }] }], `P's rows: 2 · M's columns: 2`);
+  if (!r2.split) { $('r2cells').innerHTML = ''; $('r2perp').innerHTML = ''; $('r2msg').innerHTML = 'Unequal lengths: room 1\'s swap test fails. Zoom in on M.'; return; }
+  const cells = [];
+  for (let k = 0; k < n0; k++) cells.push({ line: 0, k, z: polar(1 / Math.sqrt(N), carg(z0)) });
+  for (let k = 0; k < n1; k++) cells.push({ line: 1, k, z: polar(1 / Math.sqrt(N), carg(z1)) });
+  const grp = line => cells.map((c, i) => ({ c, i })).filter(({ c }) => c.line === line)
+    .map(({ c, i }) => ({ m: fine(c) + zk('c', i + 1), z: c.z, hi: r2.hi && r2.hi.includes(i) }));
+  $('r2cells').innerHTML = jointTable(`after: the same table, ${N} arrows, every one of length ${f3(1 / Math.sqrt(N))}`,
+    [{ line: 0, cells: grp(0) }, { line: 1, cells: grp(1) }], `P's rows: still 2 (line 0 owns ${n0} column${n0 > 1 ? 's' : ''}, line 1 owns ${n1}) · M's columns: 2 → ${N}`);
+  $('r2perp').innerHTML = r2perp(cells, N);
+  let msg = `Every cell has the same length, so every pair passes room 1's test. Odds of line 0 = ${n0} cells of ${N} = <b>${f3(n0 / N)}</b>; its length squared = ${f3(cabs(z0) ** 2)}.`;
+  if (r2.swaps) msg = `<span class="good">${r2.swaps} swap${r2.swaps > 1 ? 's' : ''} tried, all undone by M alone (largest distance ${r2.worst.toExponential(1)}).</span> ` + msg;
+  $('r2msg').innerHTML = msg;
+}
+$('r2split').onclick = () => { r2.split = true; $('r2swap').disabled = false; r2render(); };
+$('r2swap').onclick = () => {
+  const N = n0 + n1, [z0, z1] = lineAmps(n0, n1);
+  const i = Math.floor(Math.random() * N); let j = Math.floor(Math.random() * (N - 1)); if (j >= i) j++;
+  const za = polar(1 / Math.sqrt(N), carg(i < n0 ? z0 : z1)), zb = polar(1 / Math.sqrt(N), carg(j < n0 ? z0 : z1));
+  const u = undoBySwapAndPhase(za, zb);
+  r2.hi = [i, j]; r2.swaps++; r2.worst = Math.max(r2.worst, u.residual); r2render();
+};
+$('r2reset').onclick = () => { Object.assign(r2, { split: false, hi: null, swaps: 0, worst: 0 }); $('r2swap').disabled = true; r2render(); };
+
+// ---- room 3 -----------------------------------------------------------------------------------------------------
+const r3 = { tries: 0, signed: [0, 0], darts: [] };
+const G = { x: 44, y: 16, w: 300 };
+function r3split() { const a = Math.sqrt(n0), b = Math.sqrt(n1); return a / (a + b); }
+function r3draw() {
+  const s = r3split(), W = G.w, X = G.x, Y = G.y, w0 = s * W;
+  const yv = v => Y + W - v * W;                                   // M's pick runs upward
+  let h = `<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <line x1="0" y1="0" x2="0" y2="7" style="stroke:var(--rule);stroke-width:2"/></pattern></defs>`;
+  h += `<rect x="${X}" y="${Y}" width="${W}" height="${W}" style="fill:url(#hatch);stroke:var(--rule)"/>`;
+  h += `<rect x="${X}" y="${yv(s)}" width="${w0}" height="${w0}" style="fill:var(--l0-soft);stroke:var(--l0)"/>`;
+  h += `<rect x="${X + w0}" y="${Y}" width="${W - w0}" height="${W - w0}" style="fill:var(--l1-soft);stroke:var(--l1)"/>`;
+  h += `<text x="${X + w0 / 2}" y="${yv(s / 2) + 4}" text-anchor="middle" style="fill:var(--l0);font-size:11px">written 0</text>`;
+  if (W - w0 > 40) h += `<text x="${X + w0 + (W - w0) / 2}" y="${Y + (W - w0) / 2 + 4}" text-anchor="middle" style="fill:var(--l1);font-size:11px">written 1</text>`;
+  h += `<text x="${X + w0 + (W - w0) / 2}" y="${yv(s / 2) + 4}" text-anchor="middle" style="fill:var(--muted);font-size:10px">never written</text>`;
+  for (const d of r3.darts.slice(-1500)) {
+    const col = d.l < 0 ? 'var(--muted)' : LC[d.l];
+    h += d.l < 0 ? `<text x="${X + d.x * W}" y="${yv(d.y) + 3}" text-anchor="middle" style="fill:${col};font-size:8px">×</text>`
+                 : `<circle cx="${X + d.x * W}" cy="${yv(d.y)}" r="2" style="fill:${col}"/>`;
+  }
+  h += `<text x="${X + w0 / 2}" y="${Y + W + 16}" text-anchor="middle" style="fill:var(--p);font-size:11px">P: 0</text>`;
+  h += `<text x="${X + w0 + (W - w0) / 2}" y="${Y + W + 16}" text-anchor="middle" style="fill:var(--p);font-size:11px">P: 1</text>`;
+  h += `<text x="${X + W / 2}" y="${Y + W + 32}" text-anchor="middle" style="fill:var(--p);font-size:11px">P's needle, by length →</text>`;
+  h += `<text x="${X - 8}" y="${yv(s / 2)}" text-anchor="end" style="fill:var(--m);font-size:11px">M: 0</text>`;
+  h += `<text x="${X - 8}" y="${Y + (W - w0) / 2}" text-anchor="end" style="fill:var(--m);font-size:11px">M: 1</text>`;
+  $('r3svg').innerHTML = h;
+  const N = n0 + n1, acc = r3.signed[0] + r3.signed[1];
+  $('r3tally').textContent =
+    `darts ${r3.tries}   matched ${acc}   missed ${r3.tries - acc}\n` +
+    `line 0 among the written: ${acc ? f3(r3.signed[0] / acc) : '-'}\n` +
+    `cells (room 2):          ${f3(n0 / N)}\n` +
+    `length law (one needle): ${f3(r3split())}`;
+}
+function r3throw(n) {
+  const s = r3split();
+  for (let i = 0; i < n; i++) {
+    const x = Math.random(), y = Math.random(), a = x < s ? 0 : 1, b = y < s ? 0 : 1;
+    r3.tries++; const l = a === b ? a : -1; if (l >= 0) r3.signed[l]++;
+    r3.darts.push({ x, y, l });
+  }
+  if (r3.darts.length > 3000) r3.darts = r3.darts.slice(-1500);
+  r3draw();
+}
+$('r3one').onclick = () => r3throw(1); $('r3hund').onclick = () => r3throw(100); $('r3many').onclick = () => r3throw(2000);
+$('r3reset').onclick = () => { r3.tries = 0; r3.signed = [0, 0]; r3.darts = []; r3draw(); };
+
+function r3bars() {
+  const ks = [1, 2, 3, 6], names = ['1 book', '2 books', '3 books', '6 books'], sub = ['length law', 'the cells', 'a vote', 'a vote'];
+  const X = 90, W = 380, rowH = 42, s = r3split(), N = n0 + n1;
+  let h = `<line x1="${X + W * n0 / N}" y1="4" x2="${X + W * n0 / N}" y2="${ks.length * rowH + 6}" style="stroke:var(--ink);stroke-dasharray:3 3"/>`;
+  h += `<text x="${X + W * n0 / N}" y="${ks.length * rowH + 20}" text-anchor="middle" style="fill:var(--ink);font-size:10.5px">cells: ${f3(n0 / N)}</text>`;
+  ks.forEach((k, i) => {
+    let acc = 0, zero = 0;                                        // a quick count, same rule as the square
+    for (let t = 0; t < 20000; t++) {
+      const first = Math.random() < s ? 0 : 1; let ok = true;
+      for (let b = 1; b < k; b++) if ((Math.random() < s ? 0 : 1) !== first) { ok = false; break; }
+      if (ok) { acc++; if (first === 0) zero++; }
+    }
+    const counted = zero / acc, pred = booksPredicted(n0, n1, k), y = 8 + i * rowH;
+    h += `<text x="${X - 8}" y="${y + 12}" text-anchor="end" style="fill:var(--ink);font-size:11.5px">${names[i]}</text>`;
+    h += `<text x="${X - 8}" y="${y + 25}" text-anchor="end" style="fill:var(--muted);font-size:9.5px">${sub[i]}</text>`;
+    h += `<rect x="${X}" y="${y + 2}" width="${W}" height="20" rx="3" style="fill:var(--l1-soft)"/>`;
+    h += `<rect x="${X}" y="${y + 2}" width="${W * counted}" height="20" rx="3" style="fill:${k === 2 ? 'var(--l0)' : 'var(--l0-soft)'};stroke:var(--l0)"/>`;
+    h += `<text x="${X + W + 6}" y="${y + 16}" style="fill:var(--ink);font-size:10.5px">${f3(counted)}</text>`;
+    h += `<text x="${X + 4}" y="${y + 34}" style="fill:var(--muted);font-size:9.5px">predicted ${f3(pred)}</text>`;
+  });
+  $('r3bars').setAttribute('viewBox', `0 0 520 ${ks.length * rowH + 28}`);
+  $('r3bars').innerHTML = h;
+}
+
+// ---- room 4 -----------------------------------------------------------------------------------------------------
+let wiring = 'star';
+function r4net(d, k) {
+  const pos = { P: [28, 90], M: [96, 90] }, W = [];
+  for (let j = 1; j <= d; j++) W.push(wiring === 'star' ? [250, d === 1 ? 90 : 20 + (j - 1) * 140 / (d - 1)] : [96 + j * 50, 90]);
+  const inR = j => j <= k;
+  let h = '';
+  const reachX = wiring === 'star' ? (k > 0 ? 272 : 118) : 118 + k * 50;
+  const reachBox = wiring === 'star' && k > 0 && k < d
+    ? `<path d="M10,40 H${150} V${Math.max(8, W[0][1] - 14)} H${272} V${W[k - 1][1] + 14} H150 V140 H10 Z" style="fill:var(--p-soft);opacity:.55;stroke:var(--p);stroke-dasharray:4 3"/>`
+    : `<rect x="10" y="${wiring === 'star' && k > 0 ? 6 : 58}" width="${reachX - 10}" height="${wiring === 'star' && k > 0 ? 168 : 64}" rx="10" style="fill:var(--p-soft);opacity:.55;stroke:var(--p);stroke-dasharray:4 3"/>`;
+  h += reachBox;
+  const line = (a, b) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" style="stroke:var(--muted);stroke-width:1.5"/>`;
+  h += line(pos.P, pos.M);
+  W.forEach((w, j) => { h += line(wiring === 'star' || j === 0 ? pos.M : W[j - 1], w); });
+  const node = (p, lbl, col, filled) => `<circle cx="${p[0]}" cy="${p[1]}" r="14" style="fill:${filled ? col : 'var(--surface)'};stroke:${col};stroke-width:2"/>
+    <text x="${p[0]}" y="${p[1] + 4}" text-anchor="middle" style="fill:${filled ? 'var(--surface)' : col};font-size:11px;font-weight:600">${lbl}</text>`;
+  h += node(pos.P, 'P', 'var(--p)', true) + node(pos.M, 'M', 'var(--m)', true);
+  W.forEach((w, j) => { h += node(w, 'W' + (j + 1), 'var(--l0)', inR(j + 1)); });
+  h += `<text x="14" y="176" style="fill:var(--p);font-size:10px">the undo reaches the shaded part</text>`;
+  $('r4net').innerHTML = h;
+}
+function r4chart(phi, k) {
+  const X = 44, Y = 22, W = 350, H = 150, xv = d => X + d * W / 6, yv = v => Y + H - v * H;
+  let h = `<rect x="${X}" y="${Y}" width="${W}" height="${H}" style="fill:none;stroke:var(--rule)"/>`;
+  for (const v of [0, .5, 1]) h += `<text x="${X - 6}" y="${yv(v) + 4}" text-anchor="end" style="fill:var(--muted);font-size:10px">${v}</text>`;
+  for (let d = 0; d <= 6; d++) h += `<text x="${xv(d)}" y="${Y + H + 14}" text-anchor="middle" style="fill:var(--muted);font-size:10px">${d}</text>`;
+  h += `<text x="${X + W / 2}" y="${Y + H + 30}" text-anchor="middle" style="fill:var(--muted);font-size:10.5px">witnesses beyond the undo's reach</text>`;
+  const series = [['star', 'var(--l0)', 'crowd of looks'], ['chain', 'var(--l1)', 'chain of retellings']];
+  series.forEach(([w, col, name], si) => {
+    let pts = [];
+    for (let u = 0; u <= 6; u++) pts.push([xv(u), yv(witnessRun(n0, n1, u, phi, w, 0))]);
+    h += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" style="fill:none;stroke:${col};stroke-width:2"/>`;
+    pts.forEach(p => { h += `<circle cx="${p[0]}" cy="${p[1]}" r="3" style="fill:${col}"/>`; });
+    const lx = X + si * 170, ly = Y + H + 50;
+    h += `<line x1="${lx}" y1="${ly}" x2="${lx + 18}" y2="${ly}" style="stroke:${col};stroke-width:2"/>
+          <text x="${lx + 24}" y="${ly + 4}" style="fill:var(--ink);font-size:10.5px">${name}</text>`;
+  });
+  h += `<text x="${X}" y="${Y - 8}" style="fill:var(--muted);font-size:10px">the other line that can still come back, look = ${phi}°</text>`;
+  $('r4chart').innerHTML = h;
+}
+function r4render() {
+  const d = +$('r4d').value, phi = +$('r4phi').value;
+  $('r4k').max = d; if (+$('r4k').value > d) $('r4k').value = d;
+  const k = +$('r4k').value;
+  $('r4dOut').textContent = d; $('r4phiOut').textContent = phi + '°'; $('r4kOut').textContent = k + ' of ' + d;
+  const back = witnessRun(n0, n1, d, phi, wiring, k), cos = Math.cos(phi * Math.PI / 180);
+  const law = wiring === 'star' ? Math.pow(cos, d - k) : null;
+  let m = `<span class="big">${(100 * back).toFixed(1)}%</span> of the other line comes back.`;
+  if (wiring === 'star') m += `<br>A crowd: one factor cos ${phi}° per unreached direct witness, ${d - k} of them: ${f3(law)}.`;
+  else if (k === 0 && d > 0) m += `<br>A chain: the first link is out of reach, and the rest add nothing (cos ${phi}° = ${f3(cos)}, whatever the length).`;
+  else if (k < d) m += `<br>A chain reached up to W${k}: the tail beyond it hangs on one link, so it costs little, however long it is.`;
+  if (back < 0.01) m += ` <span class="bad">For anyone who cannot reach those witnesses, the promise is a fact.</span>`;
+  else if (back > 0.999) m += ` <span class="good">Everything within reach: still a promise.</span>`;
+  $('r4msg').innerHTML = m;
+  r4net(d, k); r4chart(phi, k);
+}
+['r4d', 'r4phi', 'r4k'].forEach(id => $(id).oninput = r4render);
+document.querySelectorAll('#r4wiring button').forEach(b => b.onclick = () => {
+  wiring = b.dataset.w; document.querySelectorAll('#r4wiring button').forEach(x => x.classList.toggle('on', x === b)); r4render();
+});
+
+function resetAll() {
+  presetInfo();
+  Object.assign(r1, { met: false, swapped: false, relabel: false, undone: false }); r1render();
+  Object.assign(r2, { split: false, hi: null, swaps: 0, worst: 0 }); $('r2swap').disabled = true; r2render();
+  r3.tries = 0; r3.signed = [0, 0]; r3.darts = []; r3draw(); r3bars();
+  r4render();
+}
+resetAll();
+</script>
+</body>
+</html>
