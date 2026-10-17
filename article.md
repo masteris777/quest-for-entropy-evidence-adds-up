@@ -154,6 +154,8 @@ The closest guide to this picture is Wojciech Zurek. His [quantum Darwinism](htt
 
 The companion code recomputes the witness numbers from standard gates on an exact simulator, the crowd and the chain side by side: [github.com/masteris777/quest-for-entropy-evidence-adds-up](https://github.com/masteris777/quest-for-entropy-evidence-adds-up), one command: `python the_crowd_and_the_chain.py`.
 
+Archived: DOI [10.5281/zenodo.23431960](https://zenodo.org/records/23431960).
+
 ## How this was made
 
 I'm a software architect. I built an adversarial research harness around AI agents and ran a physics toy-model programme through it.
